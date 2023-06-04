@@ -2,19 +2,26 @@
 #include "nn.h"
 #include <time.h>
 
-float td[] = {
-    0,0,0,
-    0,1,1,
-    1,0,1,
-    1,1,0,
+float td_xor[] = {
+    0, 0, 0,
+    0, 1, 1,
+    1, 0, 1,
+    1, 1, 0,
+};
+
+float td_or[] = {
+    0, 0, 0,
+    0, 1, 1,
+    1, 0, 1,
+    1, 1, 1,
 };
 
 int main(void)
 {
     srand(time(0));
-
+    float* td = td_xor;
     size_t stride = 3;
-    size_t n = sizeof(td) / sizeof(td[0])/stride;
+    size_t n = 4;
     Mat ti = {
         .rows = n,
         .cols = 2,
@@ -29,7 +36,7 @@ int main(void)
         .es = td + 2,
     };
 
-    size_t arch[] = {2,2,1};
+    size_t arch[] = {2,2,1}; // first index is input layer and last index is output layer, all of the others are hidden layer
     NN nn = nn_alloc(arch , ARRAY_LEN(arch));
     NN g = nn_alloc(arch,ARRAY_LEN(arch));
     nn_rand(nn,0,1);
