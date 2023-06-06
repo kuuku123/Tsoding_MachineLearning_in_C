@@ -1,9 +1,22 @@
 
 \documentclass{article}
 
-\usepackage{amsmath, kotex}
+\usepackage{amsmath,mathtools ,kotex , titling, tikz}
+\newcommand{\subtitle}[1]{%
+  \posttitle{%
+    \par\end{center}
+    \begin{center}\LARGE#1\end{center}
+    \vskip0.5em}%
+}
+\title{\textbf{The University of Yonsei
+\\{\Large Faculty of Industrial Engineering}}}
+\subtitle{Tsoding MachineLearning In C}
+\author{\emph{Lim Dohyun}}
 
 \begin{document}
+\maketitle
+\section{Introduction}
+안녕하세요 한국말이 처음 입니다.
 
 \section{Gradient Descent}
 
@@ -11,7 +24,7 @@
     C'(w) = \lim_{\epsilon \to 0}\frac{C(w + \epsilon) -C(w)}{\epsilon}
 \end{align}
 
-\subsection{``Twice''}
+\subsection{Twice}
 \begin{verse}
     sequence of derivating C(w) with respect to w.
 \end{verse}
@@ -19,8 +32,46 @@
    C(w) &= \frac{1}{n}{\sum_{i=1}^{n}(x_iw - y_i)^2} \\
    C'(w) &= \left(\frac{1}{n}{\sum_{i=1}^{n}(x_iw - y_i)^2}\right)' \\
    &= \frac{1}{n}\left({\sum_{i=1}^{n}(x_iw - y_i)^2}\right)' \\
-   &= \frac{2}{n}{\sum_{i=1}^{n}(x_iw - y_i)(x_i)'} \\
+   &= \frac{2}{n}{\sum_{i=1}^{n}(x_iw - y_i)(x_i)'}
 \end{align}
 
+\begin{align}
+    \shortintertext{Cost funtction}
+    C(w) &= \frac{1}{n}{\sum_{i=1}^{n}(x_iw - y_i)^2} \\
+    \shortintertext{Derviative of Cost function}
+    C'(w) &= \frac{2}{n}{\sum_{i=1}^{n}(x_iw - y_i)(x_i)'}
+\end{align} 
+
+    \bigskip
+
+\subsection{One Neuron Model}
+
+\def\d{1.5}
+
+\begin{center}
+    \begin{tikzpicture}
+        \node (X) at (-\d,0) {$x$ };
+        \node[shape=circle,draw=black] (N) at (0,0) {$\sigma, w ,b$ };
+        \node (Y) at (\d,0) {$y$ };
+        \path[->] (X) edge (N);
+        \path[->] (N) edge (Y);
+    \end{tikzpicture}
+\end{center}
+
+\begin{align}
+    y &= \sigma(xw + b) \\
+    \sigma(x) &= \frac{1}{1 + e^{-x}} \\
+    \sigma'(x) &= \sigma(x)(1 - \sigma(x)) 
+\end{align}
+
+\subsubsection{Cost}
+
+\def\pd[#1]{\partial_{#1}}
+\def\avgsum[#1,#2]{\frac{1}{#2}\sum_{#1=0}^{#2}}
+
+\begin{align}
+    C &= \avgsum[i,n](\sigma(x_iw + b) - y_i)^2 \\
+    \pd[w]C &= \avgsum[i,n]\pd[w]\left((\sigma(x_iw + b) - y_i)^2\right)
+\end{align}
 
 \end{document}
