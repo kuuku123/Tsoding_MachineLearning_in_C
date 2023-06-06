@@ -1,0 +1,26 @@
+
+\documentclass{article}
+
+\usepackage{amsmath, kotex}
+
+\begin{document}
+
+\section{Gradient Descent}
+
+\begin{align}
+    C'(w) = \lim_{\epsilon \to 0}\frac{C(w + \epsilon) -C(w)}{\epsilon}
+\end{align}
+
+\subsection{``Twice''}
+\begin{verse}
+    sequence of derivating C(w) with respect to w.
+\end{verse}
+\begin{align}
+   C(w) &= \frac{1}{n}{\sum_{i=1}^{n}(x_iw - y_i)^2} \\
+   C'(w) &= \left(\frac{1}{n}{\sum_{i=1}^{n}(x_iw - y_i)^2}\right)' \\
+   &= \frac{1}{n}\left({\sum_{i=1}^{n}(x_iw - y_i)^2}\right)' \\
+   &= \frac{2}{n}{\sum_{i=1}^{n}(x_iw - y_i)(x_i)'} \\
+\end{align}
+
+
+\end{document}

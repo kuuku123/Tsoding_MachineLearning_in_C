@@ -45,7 +45,7 @@ int main(void)
     float rate = 1e-1;
 
     printf("cost = %f\n", nn_cost(nn,ti,to));
-    for (size_t i = 0; i<20*1000; ++i) {
+    for (size_t i = 0; i<100*1000; ++i) {
         nn_finite_diff(nn, g, eps, ti, to);
         nn_learn(nn, g, rate);
         printf("%zu: cost = %f\n", i, nn_cost(nn,ti,to));
