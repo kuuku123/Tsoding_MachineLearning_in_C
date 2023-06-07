@@ -67,11 +67,20 @@
 \subsubsection{Cost}
 
 \def\pd[#1]{\partial_{#1}}
-\def\avgsum[#1,#2]{\frac{1}{#2}\sum_{#1=0}^{#2}}
+\def\avgsum[#1,#2]{\frac{1}{#2}\sum_{#1=1}^{#2}}
 
 \begin{align}
-    C &= \avgsum[i,n](\sigma(x_iw + b) - y_i)^2 \\
-    \pd[w]C &= \avgsum[i,n]\pd[w]\left((\sigma(x_iw + b) - y_i)^2\right)
+    \shortintertext{i is reffering to a sample and we have only 1 w and 1 b since it is 1 neuron model.}
+    a_i &= \sigma(x_iw +b) \\
+    \pd[w]a_i 
+        &= \pd[w](\sigma(x_iw + b)) \\
+        &= a_i(1 - a_i)\pd[w](x_iw + b) \\
+        &= a_i(1 - a_i)x_i \\
+    C &= \avgsum[i,n](a_i - y_i)^2 \\
+    \pd[w]C 
+        &= \avgsum[i, n]\pd[w]\left((a_i - y_i)^2\right) \\
+        &= \avgsum[i,n]2(a_i - y_i)\pd[w]a_i \\
+        &= \avgsum[i,n]2(a_i - y_i)a_i(1 - a_i)x_i 
 \end{align}
 
 \end{document}
