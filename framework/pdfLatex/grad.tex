@@ -44,25 +44,29 @@
 
     \bigskip
 
-\subsection{One Neuron Model}
+\subsection{One Neuron Model with 2 inputs}
 
 \def\d{1.5}
 
 \begin{center}
     \begin{tikzpicture}
-        \node (X) at (-\d,0) {$x$ };
-        \node[shape=circle,draw=black] (N) at (0,0) {$\sigma, w ,b$ };
-        \node (Y) at (\d,0) {$y$ };
-        \path[->] (X) edge (N);
-        \path[->] (N) edge (Y);
+        \node (X) at (-\d,1) {$x$};
+        \node (Y) at (-\d,-1) {$y$};
+        \node[shape=circle,draw=black] (N) at (0,0) {$\sigma,b$ };
+        \node (Z) at (\d,0) {$z$ };
+        \path[->] (X) edge node[above] {$w_1$} (N);
+        \path[->] (Y) edge node[above] {$w_2$} (N);
+        \path[->] (N) edge (Z);
     \end{tikzpicture}
 \end{center}
 
 \begin{align}
-    y &= \sigma(xw + b) \\
+    y &= \sigma(xw_1 + yw_2 + b) \\
     \sigma(x) &= \frac{1}{1 + e^{-x}} \\
     \sigma'(x) &= \sigma(x)(1 - \sigma(x)) 
 \end{align}
+
+\newpage
 
 \subsubsection{Cost}
 
@@ -70,17 +74,47 @@
 \def\avgsum[#1,#2]{\frac{1}{#2}\sum_{#1=1}^{#2}}
 
 \begin{align}
-    \shortintertext{i is reffering to a sample and we have only 1 w and 1 b since it is 1 neuron model.}
-    a_i &= \sigma(x_iw +b) \\
-    \pd[w]a_i 
-        &= \pd[w](\sigma(x_iw + b)) \\
-        &= a_i(1 - a_i)\pd[w](x_iw + b) \\
+    \shortintertext{i is reffering to a sample number}
+    a_i &= \sigma(x_iw_1 + yw_2 +b) \\
+    \pd[w_1]a_i 
+        &= \pd[w_1](\sigma(x_iw_1 + yw_2 + b)) \\
+        &= a_i(1 - a_i)\pd[w_1](x_iw_1 + yw_2 + b) \\
         &= a_i(1 - a_i)x_i \\
+    \pd[w_2]a_i
+        &= a_i(1 - a_i)y_i \\
+    \pd[b]a_i
+        &= a_i(1 - a_i) \\
     C &= \avgsum[i,n](a_i - y_i)^2 \\
-    \pd[w]C 
-        &= \avgsum[i, n]\pd[w]\left((a_i - y_i)^2\right) \\
-        &= \avgsum[i,n]2(a_i - y_i)\pd[w]a_i \\
-        &= \avgsum[i,n]2(a_i - y_i)a_i(1 - a_i)x_i 
+    \pd[w_1]C 
+        &= \avgsum[i, n]\pd[w_1]\left((a_i - z_i)^2\right) \\
+        &= \avgsum[i, n]2(a_i - z_i)\pd[w_1]a_i \\
+        &= \avgsum[i, n]2(a_i - z_i)a_i(1 - a_i)x_i \\
+    \pd[w_2]C
+        &= \avgsum[i, n]2(a_i - z_i)a_i(1 - a_i)y_i \\
+    \pd[b]C
+        &= \avgsum[i, n]2(a_i - z_i)a_i(1 - a_i)
+\end{align}
+
+\newpage
+\subsection{Two Neuron Model with 1 inputs}
+
+\def\d{2.0}
+\def\s[#1]{^{(#1)}}
+\begin{center}
+    \begin{tikzpicture}
+        \node (X) at (-\d,0) {$x$};
+        \node[shape=circle,draw=black] (N1) at (0,0) {$\sigma,b\s[1]$ };
+        \node[shape=circle,draw=black] (N2) at (\d,0) {$\sigma,b\s[2]$ };
+        \node (Y) at (2*\d,0) {$a\s[2]$ };
+        \path[->] (X) edge node[above] {$w\s[1]$} (N1);
+        \path[->] (N1) edge node[above] {$w\s[2]$} (N2); 
+        \path[->] (N2) edge (Y);
+    \end{tikzpicture}
+\end{center}
+
+\begin{align}
+    a\s[1] &= \sigma(xw\s[1] + b\s[1]) \\
+    a\s[2] &= \sigma(a\s[1]w\s[2] + b\s[2])
 \end{align}
 
 \end{document}
