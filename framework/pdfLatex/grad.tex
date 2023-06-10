@@ -74,7 +74,7 @@
 \def\avgsum[#1,#2]{\frac{1}{#2}\sum_{#1=1}^{#2}}
 
 \begin{align}
-    \shortintertext{i is reffering to a sample number}
+    \shortintertext{subscript i is reffering to a sample number}
     a_i &= \sigma(x_iw_1 + yw_2 +b) \\
     \pd[w_1]a_i 
         &= \pd[w_1](\sigma(x_iw_1 + yw_2 + b)) \\
@@ -95,7 +95,6 @@
         &= \avgsum[i, n]2(a_i - z_i)a_i(1 - a_i)
 \end{align}
 
-\newpage
 \subsection{Two Neuron Model with 1 inputs}
 
 \def\d{2.0}
@@ -105,7 +104,7 @@
         \node (X) at (-\d,0) {$x$};
         \node[shape=circle,draw=black] (N1) at (0,0) {$\sigma,b\s[1]$ };
         \node[shape=circle,draw=black] (N2) at (\d,0) {$\sigma,b\s[2]$ };
-        \node (Y) at (2*\d,0) {$a\s[2]$ };
+        \node (Y) at (2*\d,0) {$y$ };
         \path[->] (X) edge node[above] {$w\s[1]$} (N1);
         \path[->] (N1) edge node[above] {$w\s[2]$} (N2); 
         \path[->] (N2) edge (Y);
@@ -113,8 +112,69 @@
 \end{center}
 
 \begin{align}
-    a\s[1] &= \sigma(xw\s[1] + b\s[1]) \\
-    a\s[2] &= \sigma(a\s[1]w\s[2] + b\s[2])
+    \shortintertext{superscript i is reffering to a layer number}
+    a_i\s[1] &= \sigma(x_iw\s[1] + b\s[1]) \\
+    \pd[{w\s[1]}]a_i\s[1] &= a_i\s[1](1 - a_i\s[1])x_i \\
+    \pd[{b\s[1]}]a_i\s[1] &= a_i\s[1](1 - a_i\s[1]) \\
+    a_i\s[2] &= \sigma(a_i\s[1]w\s[2] + b\s[2]) \\
+    \pd[{w\s[2]}]a_i\s[2] &= a_i\s[2](1 - a_i\s[2])a_i\s[1] \\
+    \pd[{b\s[2]}]a_i\s[2] &= a_i\s[2](1 - a_i\s[2]) \\
+    \pd[{a_i\s[1]}]a_i\s[2] &= a_i\s[2](1 - a_i\s[2])w\s[2] \\
+    C\s[2] &= \avgsum[i, n] (a_i\s[2] - y_i)^2 \\
+    \pd[{w\s[2]}] C\s[2]
+        &= \avgsum[i, n] \pd[{w\s[2]}]((a_i\s[2] - y_i)^2) \\
+        &= \avgsum[i, n] 2(a_i\s[2] - y_i)\pd[{w\s[2]}](a_i\s[2]) \\
+        &= \avgsum[i, n] 2(a_i\s[2] - y_i)a_i\s[2](1 - a_i\s[2])a_i\s[1] \\
+    \pd[{b\s[2]}] C\s[2]
+        &= \avgsum[i, n] 2(a_i\s[2] - y_i)a_i\s[2](1 - a_i\s[2]) \\
+    \pd[{a_i\s[1]}] C\s[2]
+        &= \avgsum[i, n] 2(a_i\s[2] - y_i)a_i\s[2](1 - a_i\s[2])w\s[2] \\
+    e_i
+        &= a_i\s[1] - \pd[{a_i\s[1]}]C\s[2] \\
+    C\s[1]
+        &= \avgsum[i, n] (a_i\s[1] - e_i)^2 \\
+    \pd[{w\s[1]}]C\s[1]
+        &= \pd[{w\s[1]}]\left(\avgsum[i, n] (a_i\s[1] - e_i)^2\right) \\
+        &= \avgsum[i, n] \pd[{w\s[1]}]\left((a_i\s[1] - e_i)^2\right) \\
+        &= \avgsum[i, n] 2(a_i\s[1] - e_i) \pd[{w\s[1]}]a_i\s[1] \\
+        &= \avgsum[i, n] 2(a_i\s[1] -(a_i\s[1] - \pd[{a_i\s[1]}]C\s[2])) \pd[{w\s[1]}]a_i\s[1] \\
+        &= \avgsum[i, n] 2(\pd[{a_i\s[1]}]C\s[2]) \pd[{w\s[1]}]a_i\s[1] \\
+        &= \avgsum[i, n] 2(\pd[{a_i\s[1]}]C\s[2]) a_i\s[1](1 - a_i\s[1])x_i \\
+    \pd[{b\s[1]}]C\s[1]
+        &= \avgsum[i, n] 2(\pd[{a_i\s[1]}]C\s[2]) \pd[{b\s[1]}]a_i\s[1] \\
+        &= \avgsum[i, n] 2(\pd[{a_i\s[1]}]C\s[2]) a_i\s[1](1 - a_i\s[1])
+\end{align}
+
+\subsection{Arbitrary Neurons Model with 1 inputs}
+
+\subsubsection{Feed-Forward}
+
+\begin{align}
+    a_i\s[1] &= \sigma(x_iw\s[1] + b\s[1]) \\
+    \pd[{w\s[1]}]a_i\s[1] &= a_i\s[1](1 - a_i\s[1])x_i \\
+    \pd[{b\s[1]}]a_i\s[1] &= a_i\s[1](1 - a_i\s[1]) \\
+    a_i\s[2] &= \sigma(a_i\s[1]w\s[2] + b\s[2]) \\
+    \pd[{w\s[2]}]a_i\s[2] &= a_i\s[2](1 - a_i\s[2])a_i\s[1] \\
+    \pd[{b\s[2]}]a_i\s[2] &= a_i\s[2](1 - a_i\s[2]) \\
+    \pd[{a_i\s[1]}]a_i\s[2] &= a_i\s[2](1 - a_i\s[2])w\s[2] \\
+\end{align}
+\subsubsection{Back-Propagation}
+\begin{align}
+    C\s[2] &= \avgsum[i, n] (a_i\s[2] - y_i)^2 \\
+    \pd[{w\s[2]}] C\s[2]
+        &= \avgsum[i, n] 2(a_i\s[2] - y_i)a_i\s[2](1 - a_i\s[2])a_i\s[1] \\
+    \pd[{b\s[2]}] C\s[2]
+        &= \avgsum[i, n] 2(a_i\s[2] - y_i)a_i\s[2](1 - a_i\s[2]) \\
+    \pd[{a_i\s[1]}] C\s[2]
+        &= \avgsum[i, n] 2(a_i\s[2] - y_i)a_i\s[2](1 - a_i\s[2])w\s[2] \\
+    e_i
+        &= a_i\s[1] - \pd[{a_i\s[1]}]C\s[2] \\
+    C\s[1]
+        &= \avgsum[i, n] (a_i\s[1] - e_i)^2 \\
+    \pd[{w\s[1]}]C\s[1]
+        &= \avgsum[i, n] 2(\pd[{a_i\s[1]}]C\s[2]) a_i\s[1](1 - a_i\s[1])x_i \\
+    \pd[{b\s[1]}]C\s[1]
+        &= \avgsum[i, n] 2(\pd[{a_i\s[1]}]C\s[2]) a_i\s[1](1 - a_i\s[1])
 \end{align}
 
 \end{document}
