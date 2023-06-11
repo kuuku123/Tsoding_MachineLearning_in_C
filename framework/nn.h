@@ -56,6 +56,7 @@ void nn_rand(NN nn, float low, float high);
 void nn_forward(NN nn);
 float nn_cost(NN nn, Mat ti, Mat to);
 void nn_finite_diff(NN nn, NN g, float eps , Mat ti , Mat to);
+void nn_backprop(NN nn, NN g, Mat ti, Mat to);
 void nn_learn(NN nn, NN g, float rate);
 
 #endif // NN_H_
@@ -250,6 +251,38 @@ float nn_cost(NN nn, Mat ti, Mat to)
     }
 
     return c/n;
+}
+
+void nn_backprop(NN nn, NN g, Mat ti, Mat to)
+{
+    NN_ASSERT(ti.rows == to.rows);
+    size_t n = ti.rows;
+    NN_ASSERT(NN_OUTPUT(nn).cols == to.cols);
+
+    // i - current sample
+    // l - current layer
+    // j - current activation
+    // k - previous activation
+
+    for (size_t i = 0; i < n; ++i) {
+        mat_copy(NN_INPUT(nn), mat_row(ti,i));
+        nn_forward(nn);
+        for (size_t j = 0; j< to.cols; ++j) {
+            MAT_AT(NN_OUTPUT(g), 0, j) = MAT_AT(NN_OUTPUT(nn), 0, j) - MAT_AT(to, i, j);
+        }
+        NN_OUTPUT(nn) = mat_row(to, i); 
+    }
+
+    for (size_t l = nn.count; l > 0; --l) {
+        for  (size_t j = 0; j < nn.as[l].cols ; ++j) {
+            float a = MAT_AT(nn.as[l], 0, j);
+            float da = MAT_AT(g.as[l], 0, j);
+            MAT_AT(g.bs[l-1], 0, j) += 2*da*a*(1 - a);
+
+            // for (size_t k = 0; k < nn.as[l-1].cols; ++j) {
+            // }
+        }
+    }
 }
 
 void nn_finite_diff(NN nn, NN g, float eps , Mat ti , Mat to)

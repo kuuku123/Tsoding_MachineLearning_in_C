@@ -73,8 +73,8 @@
 \def\pd[#1]{\partial_{#1}}
 \def\avgsum[#1,#2]{\frac{1}{#2}\sum_{#1=1}^{#2}}
 
+subscript i is reffering to a sample number
 \begin{align}
-    \shortintertext{subscript i is reffering to a sample number}
     a_i &= \sigma(x_iw_1 + yw_2 +b) \\
     \pd[w_1]a_i 
         &= \pd[w_1](\sigma(x_iw_1 + yw_2 + b)) \\
@@ -111,8 +111,8 @@
     \end{tikzpicture}
 \end{center}
 
+superscript i is reffering to a layer number
 \begin{align}
-    \shortintertext{superscript i is reffering to a layer number}
     a_i\s[1] &= \sigma(x_iw\s[1] + b\s[1]) \\
     \pd[{w\s[1]}]a_i\s[1] &= a_i\s[1](1 - a_i\s[1])x_i \\
     \pd[{b\s[1]}]a_i\s[1] &= a_i\s[1](1 - a_i\s[1]) \\
@@ -147,34 +147,32 @@
 
 \subsection{Arbitrary Neurons Model with 1 inputs}
 
+Let's assume that we have $m$ layers.
+
 \subsubsection{Feed-Forward}
 
+Let's assume that $a_i\s[0]$ is $x_i$
+
 \begin{align}
-    a_i\s[1] &= \sigma(x_iw\s[1] + b\s[1]) \\
-    \pd[{w\s[1]}]a_i\s[1] &= a_i\s[1](1 - a_i\s[1])x_i \\
-    \pd[{b\s[1]}]a_i\s[1] &= a_i\s[1](1 - a_i\s[1]) \\
-    a_i\s[2] &= \sigma(a_i\s[1]w\s[2] + b\s[2]) \\
-    \pd[{w\s[2]}]a_i\s[2] &= a_i\s[2](1 - a_i\s[2])a_i\s[1] \\
-    \pd[{b\s[2]}]a_i\s[2] &= a_i\s[2](1 - a_i\s[2]) \\
-    \pd[{a_i\s[1]}]a_i\s[2] &= a_i\s[2](1 - a_i\s[2])w\s[2] \\
+    a_i\s[l] &= \sigma(a_i\s[l-1]w\s[l] + b\s[l]) \\
+    \pd[{w\s[l]}]a_i\s[l] &= a_i\s[l](1 - a_i\s[l])a_i\s[l-1] \\
+    \pd[{b\s[l]}]a_i\s[l] &= a_i\s[l](1 - a_i\s[l]) \\
+    \pd[{a_i\s[l-1]}]a_i\s[l] &= a_i\s[l](1 - a_i\s[l])w\s[l] \\
 \end{align}
+
 \subsubsection{Back-Propagation}
+
+Let's denote $a_i\s[m] - y_i$ as $\pd[{a_i\s[m]}]C\s[m+1]$
+
 \begin{align}
-    C\s[2] &= \avgsum[i, n] (a_i\s[2] - y_i)^2 \\
-    \pd[{w\s[2]}] C\s[2]
-        &= \avgsum[i, n] 2(a_i\s[2] - y_i)a_i\s[2](1 - a_i\s[2])a_i\s[1] \\
-    \pd[{b\s[2]}] C\s[2]
-        &= \avgsum[i, n] 2(a_i\s[2] - y_i)a_i\s[2](1 - a_i\s[2]) \\
-    \pd[{a_i\s[1]}] C\s[2]
-        &= \avgsum[i, n] 2(a_i\s[2] - y_i)a_i\s[2](1 - a_i\s[2])w\s[2] \\
-    e_i
-        &= a_i\s[1] - \pd[{a_i\s[1]}]C\s[2] \\
-    C\s[1]
-        &= \avgsum[i, n] (a_i\s[1] - e_i)^2 \\
-    \pd[{w\s[1]}]C\s[1]
-        &= \avgsum[i, n] 2(\pd[{a_i\s[1]}]C\s[2]) a_i\s[1](1 - a_i\s[1])x_i \\
-    \pd[{b\s[1]}]C\s[1]
-        &= \avgsum[i, n] 2(\pd[{a_i\s[1]}]C\s[2]) a_i\s[1](1 - a_i\s[1])
+    C\s[l]
+        &= \avgsum[i, n] (\pd[{a_i\s[l]}]C\s[l+1])^2 \\
+    \pd[{w\s[l]}]C\s[l]
+        &= \avgsum[i, n] 2(\pd[{a_i\s[l]}]C\s[l+1]) a_i\s[l](1 - a_i\s[l])x_i \\
+    \pd[{b\s[l]}]C\s[l]
+        &= \avgsum[i, n] 2(\pd[{a_i\s[l]}]C\s[l+1]) a_i\s[l](1 - a_i\s[l]) \\
+    \pd[{a_i\s[l-1]}] C\s[l]
+        &= \avgsum[i, n] 2(a_i\s[l] - y_i)a_i\s[l](1 - a_i\s[l])w\s[l]
 \end{align}
 
 \end{document}
