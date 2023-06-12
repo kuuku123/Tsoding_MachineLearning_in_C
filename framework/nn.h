@@ -301,10 +301,10 @@ void nn_backprop(NN nn, NN g, Mat ti, Mat to)
                     // j = weight matrix col
                     // k = weight matrix row
                     float pa = MAT_AT(nn.as[l-1], 0, k);
-                    float w = MAT_AT(nn.ws[l-1], 0, k);
+                    float w = MAT_AT(nn.ws[l-1], k, j);
                     MAT_AT(g.ws[l-1], k, j) += 2*da*a*(1-a)*pa;
                     // and g.as[l-1]'s derivative must sum up through all the current (l) derivative
-                    MAT_AT(g.as[l-1], 0, k) += 2*da*a*(1-a)*a*w;
+                    MAT_AT(g.as[l-1], 0, k) += 2*da*a*(1-a)*w;
                 }
             }
         }
