@@ -168,11 +168,11 @@ Let's denote $a_i\s[m] - y_i$ as $\pd[{a_i\s[m]}]C\s[m+1]$
     C\s[l]
         &= \avgsum[i, n] (\pd[{a_i\s[l]}]C\s[l+1])^2 \\
     \pd[{w\s[l]}]C\s[l]
-        &= \avgsum[i, n] 2(\pd[{a_i\s[l]}]C\s[l+1]) a_i\s[l](1 - a_i\s[l])x_i \\
+        &= \avgsum[i, n] 2(\pd[{a_i\s[l]}]C\s[l+1]) a_i\s[l](1 - a_i\s[l])a_i\s[l-1] \\
     \pd[{b\s[l]}]C\s[l]
         &= \avgsum[i, n] 2(\pd[{a_i\s[l]}]C\s[l+1]) a_i\s[l](1 - a_i\s[l]) \\
     \pd[{a_i\s[l-1]}] C\s[l]
-        &= \avgsum[i, n] 2(a_i\s[l] - y_i)a_i\s[l](1 - a_i\s[l])w\s[l]
+        &= \avgsum[i, n] 2(\pd[{a_i\s[l]}]C\s[l+1])a_i\s[l](1 - a_i\s[l])w\s[l]
 \end{align}
 
 \end{document}

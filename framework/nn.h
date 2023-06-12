@@ -50,6 +50,7 @@ typedef struct
 #define NN_OUTPUT(nn) (nn).as[(nn).count]
 
 NN nn_alloc(size_t* arch ,size_t arch_count);
+void nn_zero(NN nn);
 void nn_print(NN nn, const char* name);
 #define NN_PRINT(nn) nn_print(nn, #nn);
 void nn_rand(NN nn, float low, float high);
@@ -193,10 +194,20 @@ NN nn_alloc(size_t* arch ,size_t arch_count)
     for (size_t i = 1; i< arch_count; ++i) {
         nn.ws[i-1] = mat_alloc(nn.as[i-1].cols, arch[i]);
         nn.bs[i-1] = mat_alloc(1, arch[i]);
-        nn.as[i]   = mat_alloc(1,arch[i]);
+        nn.as[i]   = mat_alloc(1, arch[i]);
     }
 
     return nn;
+}
+
+void nn_zero(NN nn)
+{
+    for (size_t i = 0; i < nn.count; ++i) {
+        mat_fill(nn.ws[i], 0);
+        mat_fill(nn.bs[i], 0);
+        mat_fill(nn.as[i], 0);
+    }
+    mat_fill(nn.as[nn.count], 0);
 }
 
 void nn_print(NN nn , const char* name)
@@ -259,6 +270,8 @@ void nn_backprop(NN nn, NN g, Mat ti, Mat to)
     size_t n = ti.rows;
     NN_ASSERT(NN_OUTPUT(nn).cols == to.cols);
 
+    nn_zero(g);
+
     // i - current sample
     // l - current layer
     // j - current activation
@@ -267,20 +280,45 @@ void nn_backprop(NN nn, NN g, Mat ti, Mat to)
     for (size_t i = 0; i < n; ++i) {
         mat_copy(NN_INPUT(nn), mat_row(ti,i));
         nn_forward(nn);
+
+        for (size_t j = 0; j <= nn.count; ++j) {
+            mat_fill(g.as[j], 0);
+        }
+
         for (size_t j = 0; j< to.cols; ++j) {
             MAT_AT(NN_OUTPUT(g), 0, j) = MAT_AT(NN_OUTPUT(nn), 0, j) - MAT_AT(to, i, j);
         }
-        NN_OUTPUT(nn) = mat_row(to, i); 
+
+        for (size_t l = nn.count; l > 0; --l) {
+            for  (size_t j = 0; j < nn.as[l].cols ; ++j) {
+                float a = MAT_AT(nn.as[l], 0, j);
+                float da = MAT_AT(g.as[l], 0, j);
+                MAT_AT(g.bs[l-1], 0, j) += 2*da*a*(1 - a);
+
+                // The reason for running a for loop as many as the number of previous activations is 
+                // there are many weight as number of pervious activation but there is only one bias for one neuron(activation)
+                for (size_t k = 0; k < nn.as[l-1].cols; ++k) {
+                    // j = weight matrix col
+                    // k = weight matrix row
+                    float pa = MAT_AT(nn.as[l-1], 0, k);
+                    float w = MAT_AT(nn.ws[l-1], 0, k);
+                    MAT_AT(g.ws[l-1], k, j) += 2*da*a*(1-a)*pa;
+                    // and g.as[l-1]'s derivative must sum up through all the current (l) derivative
+                    MAT_AT(g.as[l-1], 0, k) += 2*da*a*(1-a)*a*w;
+                }
+            }
+        }
     }
-
-    for (size_t l = nn.count; l > 0; --l) {
-        for  (size_t j = 0; j < nn.as[l].cols ; ++j) {
-            float a = MAT_AT(nn.as[l], 0, j);
-            float da = MAT_AT(g.as[l], 0, j);
-            MAT_AT(g.bs[l-1], 0, j) += 2*da*a*(1 - a);
-
-            // for (size_t k = 0; k < nn.as[l-1].cols; ++j) {
-            // }
+    for (size_t i = 0; i < g.count; ++i) { 
+        for (size_t j = 0; j < g.ws[i].rows; ++j) {
+            for (size_t k = 0; k < g.ws[i].cols; ++k) {
+                MAT_AT(g.ws[i], j, k) /= n;
+            }
+        }
+        for (size_t j = 0; j < g.ws[i].rows; ++j) {
+            for (size_t k = 0; k < g.ws[i].cols; ++k) {
+                MAT_AT(g.bs[i], j, k) /= n;
+            }
         }
     }
 }
