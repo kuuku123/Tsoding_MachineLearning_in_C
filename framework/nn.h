@@ -315,8 +315,8 @@ void nn_backprop(NN nn, NN g, Mat ti, Mat to)
                 MAT_AT(g.ws[i], j, k) /= n;
             }
         }
-        for (size_t j = 0; j < g.ws[i].rows; ++j) {
-            for (size_t k = 0; k < g.ws[i].cols; ++k) {
+        for (size_t j = 0; j < g.bs[i].rows; ++j) {
+            for (size_t k = 0; k < g.bs[i].cols; ++k) {
                 MAT_AT(g.bs[i], j, k) /= n;
             }
         }
