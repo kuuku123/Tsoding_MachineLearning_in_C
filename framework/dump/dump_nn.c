@@ -19,7 +19,7 @@ int main(void)
     NN_PRINT(nn);
 
     uint32_t neuron_color = 0xFF0000FF;
-    uint32_t connection_color = 0xFF0000FF;
+    uint32_t connection_color = 0xFF00FF00;
     uint32_t background_color = 0xFF181818;
     Olivec_Canvas img = olivec_canvas(img_pixels, IMG_WIDTH, IMG_HEIGHT, IMG_WIDTH);
     olivec_fill(img, background_color);
@@ -39,7 +39,6 @@ int main(void)
         for (size_t i = 0; i < arch[l]; ++i) {
             int cx1 = nn_x + l * layer_hpad + layer_hpad/2;
             int cy1 = nn_y + i * layer_vpad1 + layer_vpad1/2 ;
-            olivec_circle(img, cx1, cy1, neuron_radius, neuron_color);
 
             if (l+1 < arch_count) {
                 int layer_vpad2 = nn_height / arch[l+1];
@@ -49,6 +48,7 @@ int main(void)
                     olivec_line(img, cx1, cy1, cx2, cy2, connection_color);
                 }
             }
+            olivec_circle(img, cx1, cy1, neuron_radius, neuron_color);
         }
     }
 
