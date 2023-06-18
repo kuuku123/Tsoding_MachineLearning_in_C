@@ -2,7 +2,7 @@
 #define NN_IMPLEMENTATION
 #include "framework/nn.h"
 
-#define BITS 3
+#define BITS 2
 
 int main(void)
 {
@@ -23,7 +23,7 @@ int main(void)
         MAT_AT(to, i, BITS) = z >= n;
     }
 
-    size_t arch[] = {2*BITS, 2*BITS+1, BITS + 1};
+    size_t arch[] = {2*BITS, 4*BITS, BITS + 1};
     NN nn = nn_alloc(arch, ARRAY_LEN(arch));
     NN g = nn_alloc(arch, ARRAY_LEN(arch));
     nn_rand(nn, 0, 1);
@@ -32,7 +32,7 @@ int main(void)
     float rate = 1;
 
     printf("c = %f\n", nn_cost(nn, ti, to));
-    for (size_t i = 0; i < 5000; ++i) {
+    for (size_t i = 0; i < 10 * 1000; ++i) {
 #if 1
         nn_backprop(nn, g, ti, to);
 #else
