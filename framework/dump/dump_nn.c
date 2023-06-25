@@ -15,7 +15,7 @@ int main(void)
     size_t arch[] = {4, 4, 2, 1};
     size_t arch_count = ARRAY_LEN(arch);
     NN nn = nn_alloc(arch, arch_count);
-    nn_rand(nn, 0, 1);
+    nn_rand(nn, -1, 1);
     NN_PRINT(nn);
 
     uint32_t neuron_color = 0xFF0000FF;
@@ -35,7 +35,6 @@ int main(void)
 
     for (size_t l = 0; l < arch_count; ++l) {
         int layer_vpad1 = nn_height / arch[l];
-
         for (size_t i = 0; i < arch[l]; ++i) {
             int cx1 = nn_x + l * layer_hpad + layer_hpad/2;
             int cy1 = nn_y + i * layer_vpad1 + layer_vpad1/2 ;
@@ -48,7 +47,15 @@ int main(void)
                     olivec_line(img, cx1, cy1, cx2, cy2, connection_color);
                 }
             }
-            olivec_circle(img, cx1, cy1, neuron_radius, neuron_color);
+
+            if  (l > 0) {
+                uint32_t s = floorf(255.f * sigmoidf(MAT_AT(nn.bs[l-1], 0, i)));
+                uint32_t neuron_color = 0xFF0000FF;
+                olivec_blend_color(&neuron_color, (s<<(8*3)) | 0x0000FF00);
+                olivec_circle(img, cx1, cy1, neuron_radius, neuron_color);
+            } else {
+                olivec_circle(img, cx1, cy1, neuron_radius, 0xFF505050);
+            }
         }
     }
 
