@@ -12,15 +12,16 @@ uint32_t img_pixels[IMG_WIDTH*IMG_HEIGHT];
 
 int main(void)
 {
+    srand(time(0));
     size_t arch[] = {4, 4, 2, 1};
     size_t arch_count = ARRAY_LEN(arch);
     NN nn = nn_alloc(arch, arch_count);
-    nn_rand(nn, -1, 1);
+    nn_rand(nn, -10, 10);
     NN_PRINT(nn);
 
-    uint32_t neuron_color = 0xFF0000FF;
-    uint32_t connection_color = 0xFF00FF00;
     uint32_t background_color = 0xFF181818;
+    uint32_t low_color  = 0x00FF00FF;
+    uint32_t high_color = 0x0000FF00;
     Olivec_Canvas img = olivec_canvas(img_pixels, IMG_WIDTH, IMG_HEIGHT, IMG_WIDTH);
     olivec_fill(img, background_color);
 
@@ -44,14 +45,17 @@ int main(void)
                 for (size_t j = 0; j < arch[l+1]; ++j) {
                     int cx2 = nn_x + (l+1) * layer_hpad + layer_hpad/2;
                     int cy2 = nn_y + j * layer_vpad2 + layer_vpad2/2;
+                    uint32_t alpha_w = floorf(255.f * sigmoidf(MAT_AT(nn.ws[l], i, j)));
+                    uint32_t connection_color = 0xFF000000 | low_color;
+                    olivec_blend_color(&connection_color, (alpha_w<<(8*3)) | high_color);
                     olivec_line(img, cx1, cy1, cx2, cy2, connection_color);
                 }
             }
 
             if  (l > 0) {
-                uint32_t s = floorf(255.f * sigmoidf(MAT_AT(nn.bs[l-1], 0, i)));
-                uint32_t neuron_color = 0xFF0000FF;
-                olivec_blend_color(&neuron_color, (s<<(8*3)) | 0x0000FF00);
+                uint32_t alpha_b = floorf(255.f * sigmoidf(MAT_AT(nn.bs[l-1], 0, i)));
+                uint32_t neuron_color = 0xFF000000 | low_color;
+                olivec_blend_color(&neuron_color, (alpha_b<<(8*3)) | high_color);
                 olivec_circle(img, cx1, cy1, neuron_radius, neuron_color);
             } else {
                 olivec_circle(img, cx1, cy1, neuron_radius, 0xFF505050);
