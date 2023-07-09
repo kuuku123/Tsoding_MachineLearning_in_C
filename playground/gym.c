@@ -32,10 +32,38 @@ typedef struct {
         (da)->items[(da)->count++] = (item);                                         \
     } while (0)
 
+char *args_shift(int* argc, char*** argv) 
+{
+    assert(*argc > 0);
+    char* result = (**argv);
+    (*argc) -= 1;
+    (*argv) += 1;
+    return result;
+}
+
 int main(int argc, char** argv)
 {   
+    const char* program = args_shift(&argc, &argv);
+    if (argc <= 0) {
+        fprintf(stderr, "Usage: %s <model.arch> <model.mat>\n", program);
+        fprintf(stderr, "ERROR: no archtecture file was provided\n");
+        return 1;
+    }
+
+    const char *arch_file_path = args_shift(&argc, &argv);
+    if (argc <= 0) {
+        fprintf(stderr, "Usage: %s <model.arch> <model.mat>\n", program);
+        fprintf(stderr, "ERROR: no data file was provided\n");
+        return 1;
+    }
+
+    const char* data_file_path = args_shift(&argc, &argv);
+
     unsigned int buffer_len = 0;
-    unsigned char* buffer = LoadFileData("adder.arch", &buffer_len);
+    unsigned char* buffer = LoadFileData(arch_file_path, &buffer_len);
+    if (buffer == NULL) {
+        return 1;
+    }
 
     String_View content = sv_from_parts((const char*) buffer, buffer_len);
 
@@ -49,25 +77,21 @@ int main(int argc, char** argv)
         content = sv_trim_left(content);
     }
 
-    NN nn = nn_alloc(arch.items, arch.count);
-    nn_rand(nn, 0, 1);
-    NN_PRINT(nn);
-
-    InitWindow(IMG_WIDTH, IMG_HEIGHT, "gym");
-    SetTargetFPS(60);
-
-    size_t i = 0;
-    while (!WindowShouldClose()) {
-        if (i < 5000) {
-            nn_backprop(nn, g, ti, to);
-            nn_learn(nn, g, rate);
-            i += 1;
-            printf("c = %f\n", nn_cost(nn, ti, to));
-        }
-
-        BeginDrawing();
-        nn_render_raylib(nn);
-        EndDrawing();
+    FILE* in = fopen(data_file_path, "rb");
+    if (in == NULL) {
+        fprintf(stderr, "ERROR: couldn't read file %s\n", data_file_path);
     }
+    Mat t = mat_load(in);
+    fclose(in);
+
+    MAT_PRINT(t);
+
+    // InitWindow(IMG_WIDTH, IMG_HEIGHT, "gym");
+    // SetTargetFPS(60);
+
+    // size_t i = 0;
+    // while (!WindowShouldClose()) {
+
+    // }
 
 }
