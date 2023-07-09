@@ -53,7 +53,21 @@ int main(int argc, char** argv)
     nn_rand(nn, 0, 1);
     NN_PRINT(nn);
 
-    // InitWindow(IMG_WIDTH, IMG_HEIGHT, "gym");
-    // SetTargetFPS(60);
+    InitWindow(IMG_WIDTH, IMG_HEIGHT, "gym");
+    SetTargetFPS(60);
+
+    size_t i = 0;
+    while (!WindowShouldClose()) {
+        if (i < 5000) {
+            nn_backprop(nn, g, ti, to);
+            nn_learn(nn, g, rate);
+            i += 1;
+            printf("c = %f\n", nn_cost(nn, ti, to));
+        }
+
+        BeginDrawing();
+        nn_render_raylib(nn);
+        EndDrawing();
+    }
 
 }
