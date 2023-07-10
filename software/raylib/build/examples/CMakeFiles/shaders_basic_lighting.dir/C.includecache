@@ -1,0 +1,30 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+../src/raylib.h
+stdarg.h
+-
+stdbool.h
+-
+
+../src/raymath.h
+math.h
+-
+
+/home/tony/c/Tsoding_MachineLearning_In_C/software/raylib/examples/shaders/rlights.h
+raylib.h
+/home/tony/c/Tsoding_MachineLearning_In_C/software/raylib/examples/shaders/raylib.h
+
+/home/tony/c/Tsoding_MachineLearning_In_C/software/raylib/examples/shaders/shaders_basic_lighting.c
+raylib.h
+/home/tony/c/Tsoding_MachineLearning_In_C/software/raylib/examples/shaders/raylib.h
+raymath.h
+/home/tony/c/Tsoding_MachineLearning_In_C/software/raylib/examples/shaders/raymath.h
+rlights.h
+/home/tony/c/Tsoding_MachineLearning_In_C/software/raylib/examples/shaders/rlights.h
+

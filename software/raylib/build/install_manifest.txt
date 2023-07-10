@@ -1,0 +1,7 @@
+/home/tony/opt/raylib/lib/libraylib.a
+/home/tony/opt/raylib/include/raylib.h
+/home/tony/opt/raylib/include/rlgl.h
+/home/tony/opt/raylib/include/raymath.h
+/home/tony/opt/raylib/lib/pkgconfig/raylib.pc
+/home/tony/opt/raylib/lib/cmake/raylib/raylib-config-version.cmake
+/home/tony/opt/raylib/lib/cmake/raylib/raylib-config.cmake

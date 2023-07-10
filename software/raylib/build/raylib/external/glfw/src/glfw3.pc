@@ -1,0 +1,13 @@
+prefix=/home/tony/opt/raylib
+exec_prefix=${prefix}
+includedir=/home/tony/opt/raylib/include
+libdir=/home/tony/opt/raylib/lib
+
+Name: GLFW
+Description: A multi-platform library for OpenGL, window and input
+Version: 3.4.0
+URL: https://www.glfw.org/
+Requires.private: 
+Libs: -L${libdir} -lglfw3
+Libs.private:  -lrt -lm -ldl
+Cflags: -I${includedir}

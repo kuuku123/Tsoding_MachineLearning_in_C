@@ -1,0 +1,1 @@
+/usr/bin/cc -std=c11 -fno-strict-aliasing -Werror=implicit-function-declaration -Werror=pointer-arith  -g  -rdynamic CMakeFiles/textures_mouse_painting.dir/textures/textures_mouse_painting.c.o  -o textures_mouse_painting  -lpthread ../raylib/libraylib.a -lm -lpthread -lOpenGL -lGLX ../raylib/external/glfw/src/libglfw3.a -lpthread -lrt -lm -ldl 

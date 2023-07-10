@@ -1,0 +1,1 @@
+/usr/bin/cc -std=c11 -fno-strict-aliasing -Werror=implicit-function-declaration -Werror=pointer-arith  -g  -rdynamic CMakeFiles/textures_image_loading.dir/textures/textures_image_loading.c.o  -o textures_image_loading  -lpthread ../raylib/libraylib.a -lm -lpthread -lOpenGL -lGLX ../raylib/external/glfw/src/libglfw3.a -lpthread -lrt -lm -ldl 

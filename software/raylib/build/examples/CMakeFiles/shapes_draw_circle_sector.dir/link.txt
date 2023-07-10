@@ -1,0 +1,1 @@
+/usr/bin/cc -std=c11 -fno-strict-aliasing -Werror=implicit-function-declaration -Werror=pointer-arith  -g  -rdynamic CMakeFiles/shapes_draw_circle_sector.dir/shapes/shapes_draw_circle_sector.c.o  -o shapes_draw_circle_sector  -lpthread ../raylib/libraylib.a -lm -lpthread -lOpenGL -lGLX ../raylib/external/glfw/src/libglfw3.a -lpthread -lrt -lm -ldl 

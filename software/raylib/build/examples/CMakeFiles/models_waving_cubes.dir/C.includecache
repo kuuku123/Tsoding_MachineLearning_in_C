@@ -1,0 +1,20 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+../src/raylib.h
+stdarg.h
+-
+stdbool.h
+-
+
+/home/tony/c/Tsoding_MachineLearning_In_C/software/raylib/examples/models/models_waving_cubes.c
+raylib.h
+/home/tony/c/Tsoding_MachineLearning_In_C/software/raylib/examples/models/raylib.h
+math.h
+-
+

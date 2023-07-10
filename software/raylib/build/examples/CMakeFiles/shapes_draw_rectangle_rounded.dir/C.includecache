@@ -1,0 +1,34 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+../src/raylib.h
+stdarg.h
+-
+stdbool.h
+-
+
+/home/tony/c/Tsoding_MachineLearning_In_C/software/raylib/examples/shapes/raygui.h
+raylib.h
+/home/tony/c/Tsoding_MachineLearning_In_C/software/raylib/examples/shapes/raylib.h
+stdio.h
+-
+stdlib.h
+-
+string.h
+-
+stdarg.h
+-
+math.h
+-
+
+/home/tony/c/Tsoding_MachineLearning_In_C/software/raylib/examples/shapes/shapes_draw_rectangle_rounded.c
+raylib.h
+-
+raygui.h
+/home/tony/c/Tsoding_MachineLearning_In_C/software/raylib/examples/shapes/raygui.h
+
