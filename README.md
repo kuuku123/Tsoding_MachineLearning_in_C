@@ -1,5 +1,9 @@
 # Tsoding_MachineLearning_in_C
 
+to make use of pdflatex in wsl2
+
+1. install texlive-full
+
 to make use of raylib
 
 1. inside /software/raylib directory delete "build" directory and make new "build" directory.
