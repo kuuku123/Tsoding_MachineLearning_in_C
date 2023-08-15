@@ -1,1 +1,0 @@
-/usr/bin/cc -std=c11 -fno-strict-aliasing -Werror=implicit-function-declaration -Werror=pointer-arith  -g  -rdynamic CMakeFiles/text_writing_anim.dir/text/text_writing_anim.c.o  -o text_writing_anim  -lpthread ../raylib/libraylib.a -lm -lpthread -lOpenGL -lGLX ../raylib/external/glfw/src/libglfw3.a -lpthread -lrt -lm -ldl 

@@ -1,1 +1,0 @@
-/usr/bin/cc -std=c11 -fno-strict-aliasing -Werror=implicit-function-declaration -Werror=pointer-arith  -g  -rdynamic CMakeFiles/text_font_sdf.dir/text/text_font_sdf.c.o  -o text_font_sdf  -lpthread ../raylib/libraylib.a -lm -lpthread -lOpenGL -lGLX ../raylib/external/glfw/src/libglfw3.a -lpthread -lrt -lm -ldl 
