@@ -41,7 +41,7 @@ char *args_shift(int* argc, char*** argv)
     return result;
 }
 
-void nn_render_raylib(NN nn)
+void nn_render_raylib(NN nn,int w, int h)
 {
     Color background_color = { 0x18, 0x18, 0x18, 0xFF};
     Color low_color  = {0xFF , 0x00, 0xFF, 0xFF};
@@ -49,13 +49,13 @@ void nn_render_raylib(NN nn)
 
     ClearBackground(background_color);
 
-    int neuron_radius = 25;
+    float neuron_radius = h*0.04;
     int layer_border_vpad = 50;
     int layer_border_hpad = 50;
-    int nn_width = IMG_WIDTH- 2*layer_border_hpad;
-    int nn_height = IMG_HEIGHT - 2 * layer_border_vpad;
-    int nn_x = IMG_WIDTH/2 - nn_width/2;
-    int nn_y = IMG_HEIGHT/2 - nn_height/2;
+    int nn_width = w - 2*layer_border_hpad;
+    int nn_height = h - 2 * layer_border_vpad;
+    int nn_x = w/2 - nn_width/2;
+    int nn_y = h/2 - nn_height/2;
 
     size_t arch_count = nn.count + 1;
     int layer_hpad = nn_width / arch_count;
@@ -176,7 +176,7 @@ int main(int argc, char** argv)
         }
 
         BeginDrawing();
-        nn_render_raylib(nn);
+        nn_render_raylib(nn,IMG_WIDTH/2, IMG_HEIGHT/2);
         EndDrawing();
     }
 
