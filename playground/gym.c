@@ -3,6 +3,8 @@
 // then loaded up with nn.h and used in your application
 #include <assert.h>
 #include <stdio.h>
+#include <limits.h>
+#include <float.h>
 #include "raylib.h"
 #define SV_IMPLEMENTATION
 #include "sv.h"
@@ -17,8 +19,13 @@ typedef struct {
     size_t* items;
     size_t count;
     size_t capacity;
-    
 } Arch;
+
+typedef struct {
+    float *items;
+    size_t count;
+    size_t capacity;
+} Cost_Plot;
 
 #define DA_INIT_CAP 256
 #define da_append(da, item)                                                          \
@@ -41,21 +48,19 @@ char *args_shift(int* argc, char*** argv)
     return result;
 }
 
-void nn_render_raylib(NN nn,int w, int h)
+void nn_render_raylib(NN nn,int rx, int ry, int rw, int rh)
 {
-    Color background_color = { 0x18, 0x18, 0x18, 0xFF};
     Color low_color  = {0xFF , 0x00, 0xFF, 0xFF};
     Color high_color = {0x00 , 0xFF, 0x00, 0xFF};
 
-    ClearBackground(background_color);
 
-    float neuron_radius = h*0.04;
+    float neuron_radius = rh*0.04;
     int layer_border_vpad = 50;
     int layer_border_hpad = 50;
-    int nn_width = w - 2*layer_border_hpad;
-    int nn_height = h - 2 * layer_border_vpad;
-    int nn_x = w/2 - nn_width/2;
-    int nn_y = h/2 - nn_height/2;
+    int nn_width = rw - 2*layer_border_hpad;
+    int nn_height = rh - 2 * layer_border_vpad;
+    int nn_x = rx + rw/2 - nn_width/2;
+    int nn_y = ry + rh/2 - nn_height/2;
 
     size_t arch_count = nn.count + 1;
     int layer_hpad = nn_width / arch_count;
@@ -72,7 +77,7 @@ void nn_render_raylib(NN nn,int w, int h)
                     int cy2 = nn_y + j * layer_vpad2 + layer_vpad2/2;
                     float value = sigmoidf(MAT_AT(nn.ws[l], i, j));
                     high_color.a = floorf(255.f * value);
-                    float thick = 3.0f;
+                    float thick = rh * 0.004f;
                     Vector2 start = {cx1, cy1};
                     Vector2 end = {cx2, cy2};
                     DrawLineEx(start, end, thick, ColorAlphaBlend(low_color, high_color,  WHITE));
@@ -86,6 +91,33 @@ void nn_render_raylib(NN nn,int w, int h)
                 DrawCircle(cx1, cy1, neuron_radius, GRAY); 
             }
         }
+    }
+}
+
+void cost_plot_minmax(Cost_Plot plot, float *min, float *max) 
+{
+    *min = FLT_MAX;
+    *max = FLT_MIN;
+    for (size_t i = 0; i < plot.count; ++i) {
+        if (*max < plot.items[i]) *max = plot.items[i];
+        if (*min > plot.items[i]) *min = plot.items[i];
+        
+    }
+}
+
+void plot_cost(Cost_Plot plot, int rx, int ry, int rw, int rh) 
+{
+    float min, max;
+    cost_plot_minmax(plot, &min, &max);
+    if (min > 0) min = 0;
+    size_t n = plot.count;
+    if (n < 1000) n = 1000;
+    for (size_t i = 0 ; i+1 < plot.count; ++i) {
+        float x1 = rx + (float)rw / n * i;
+        float y1 = ry + (1 - (plot.items[i] - min) / (max - min)) * rh;
+        float x2 = rx + (float)rw / n * (i+1);
+        float y2 = ry + (1 - (plot.items[i+1] - min) / (max - min)) * rh;
+        DrawLineEx((Vector2) {x1, y1}, (Vector2){x2 ,y2}, rh*0.007,RED);
     }
 }
 
@@ -166,17 +198,42 @@ int main(int argc, char** argv)
     InitWindow(IMG_WIDTH, IMG_HEIGHT, "gym");
     SetTargetFPS(60);
 
+    Cost_Plot plot = {0};
+
     size_t i = 0;
     while (!WindowShouldClose()) {
         if (i < 5000) {
             nn_backprop(nn, g, ti, to);
             nn_learn(nn, g, rate);
             i += 1;
-            printf("%zu: c = %f\n", i, nn_cost(nn, ti, to));
+            // if (i%10 == 0) {
+                da_append(&plot, nn_cost(nn, ti, to));
+            // }
         }
 
         BeginDrawing();
-        nn_render_raylib(nn,IMG_WIDTH/2, IMG_HEIGHT/2);
+        Color background_color = { 0x18, 0x18, 0x18, 0xFF};
+        ClearBackground(background_color);
+        {
+            int rw, rh, rx, ry;
+
+            rw = IMG_WIDTH/2;
+            rh = IMG_HEIGHT*2/3;
+            rx = 0;
+            ry = IMG_HEIGHT/2 - rh/2;
+            int ceil = ry - 10;
+            int floor = ry+rh+10;
+            plot_cost(plot,rx, ry, rw, rh);
+            DrawLineEx((Vector2) {0, ceil}, (Vector2){rw ,ceil}, rh*0.007,GREEN);
+            DrawLineEx((Vector2) {0, floor}, (Vector2){rw ,floor}, rh*0.007,GREEN);
+
+            rw = IMG_WIDTH/2;
+            rh = IMG_HEIGHT*2/3;
+            rx = IMG_WIDTH - rw;
+            ry = IMG_HEIGHT/2 - rh/2;
+            nn_render_raylib(nn, rx, ry, rw, rh);
+
+        }
         EndDrawing();
     }
 
