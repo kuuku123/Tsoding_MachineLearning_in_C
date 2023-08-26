@@ -72,7 +72,7 @@ void nn_render_raylib(NN nn)
                     int cy2 = nn_y + j * layer_vpad2 + layer_vpad2/2;
                     float value = sigmoidf(MAT_AT(nn.ws[l], i, j));
                     high_color.a = floorf(255.f * value);
-                    float thick = 1.0f * value;
+                    float thick = 3.0f;
                     Vector2 start = {cx1, cy1};
                     Vector2 end = {cx2, cy2};
                     DrawLineEx(start, end, thick, ColorAlphaBlend(low_color, high_color,  WHITE));
