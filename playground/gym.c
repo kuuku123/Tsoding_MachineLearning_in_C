@@ -204,7 +204,6 @@ int main(int argc, char** argv)
     size_t max_epoch = 5000;
     float cost_value = 0;
     while (!WindowShouldClose()) {
-        for (size_t i = 0; i < 10 && epoch < max_epoch; ++i)
         if (epoch < max_epoch) {
             nn_backprop(nn, g, ti, to);
             nn_learn(nn, g, rate);
