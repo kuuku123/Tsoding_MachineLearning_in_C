@@ -193,7 +193,7 @@ int main(int argc, char** argv)
     nn_rand(nn, 0, 1);
     NN_PRINT(nn);
 
-    float rate = 1;
+    float rate = 0.5;
 
     InitWindow(IMG_WIDTH, IMG_HEIGHT, "gym");
     SetTargetFPS(60);
@@ -217,20 +217,20 @@ int main(int argc, char** argv)
         {
             int rw, rh, rx, ry;
 
-            rw = IMG_WIDTH/2;
-            rh = IMG_HEIGHT*2/3;
+            rw = GetRenderWidth()/2;
+            rh = GetRenderHeight()*2/3;
             rx = 0;
-            ry = IMG_HEIGHT/2 - rh/2;
+            ry = GetRenderHeight()/2 - rh/2;
             int ceil = ry - 10;
             int floor = ry+rh+10;
             plot_cost(plot,rx, ry, rw, rh);
             DrawLineEx((Vector2) {0, ceil}, (Vector2){rw ,ceil}, rh*0.007,GREEN);
             DrawLineEx((Vector2) {0, floor}, (Vector2){rw ,floor}, rh*0.007,GREEN);
 
-            rw = IMG_WIDTH/2;
-            rh = IMG_HEIGHT*2/3;
-            rx = IMG_WIDTH - rw;
-            ry = IMG_HEIGHT/2 - rh/2;
+            rw = GetRenderWidth()/2;
+            rh = GetRenderHeight()*2/3;
+            rx = GetRenderWidth() - rw;
+            ry = GetRenderHeight()/2 - rh/2;
             nn_render_raylib(nn, rx, ry, rw, rh);
 
         }
