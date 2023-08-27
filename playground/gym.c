@@ -200,15 +200,17 @@ int main(int argc, char** argv)
 
     Cost_Plot plot = {0};
 
-    size_t i = 0;
+    size_t epoch = 0;
+    size_t max_epoch = 5000;
+    float cost_value = 0;
     while (!WindowShouldClose()) {
-        if (i < 5000) {
+        for (size_t i = 0; i < 10 && epoch < max_epoch; ++i)
+        if (epoch < max_epoch) {
             nn_backprop(nn, g, ti, to);
             nn_learn(nn, g, rate);
-            i += 1;
-            // if (i%10 == 0) {
-                da_append(&plot, nn_cost(nn, ti, to));
-            // }
+            epoch += 1;
+            cost_value = nn_cost(nn, ti, to);
+            da_append(&plot, cost_value);
         }
 
         BeginDrawing();
@@ -217,21 +219,30 @@ int main(int argc, char** argv)
         {
             int rw, rh, rx, ry;
 
-            rw = GetRenderWidth()/2;
-            rh = GetRenderHeight()*2/3;
+            int cw = GetRenderWidth();
+            int ch = GetRenderHeight();
+
+            rw = cw/2;
+            rh = ch*2/3;
             rx = 0;
-            ry = GetRenderHeight()/2 - rh/2;
+            ry = ch/2 - rh/2;
             int ceil = ry - 10;
             int floor = ry+rh+10;
             plot_cost(plot,rx, ry, rw, rh);
             DrawLineEx((Vector2) {0, ceil}, (Vector2){rw ,ceil}, rh*0.007,GREEN);
             DrawLineEx((Vector2) {0, floor}, (Vector2){rw ,floor}, rh*0.007,GREEN);
 
-            rw = GetRenderWidth()/2;
-            rh = GetRenderHeight()*2/3;
-            rx = GetRenderWidth() - rw;
-            ry = GetRenderHeight()/2 - rh/2;
+            rw = cw/2;
+            rh = ch*2/3;
+            rx = cw - rw;
+            ry = ch/2 - rh/2;
             nn_render_raylib(nn, rx, ry, rw, rh);
+            char buffer[256];
+            snprintf(buffer,sizeof(buffer),"Epoch: %zu/%zu Rate: %f", epoch, max_epoch, rate);
+            DrawText(buffer, 0, 0, ch * 0.04, WHITE);
+            char costBuffer[256];
+            snprintf(costBuffer,sizeof(costBuffer),"Cost: %f", cost_value);
+            DrawText(costBuffer, 0, 50, ch * 0.04, WHITE);
 
         }
         EndDrawing();
