@@ -55,17 +55,39 @@ int main(int argc, char **argv)
             MAT_AT(t, i, 2) = nb;
         }
     }
-    MAT_PRINT(t);
 
-    const char *out_file_path = "img.mat";
-    FILE *out = fopen(out_file_path, "wb");
-    if (out == NULL) {
-        fprintf(stderr, "ERROR: could not open file %s\n", out_file_path);
-        return 1;
+    Mat ti = {
+        .rows = t.rows,
+        .cols = 2,
+        .stride = t.stride,
+        .es = &MAT_AT(t, 0, 0),
+    };
+
+    Mat to = {
+        .rows = t.rows,
+        .cols = 1,
+        .stride = t.stride,
+        .es = &MAT_AT(t, 0, ti.cols),
+    };
+
+    MAT_PRINT(ti);
+    MAT_PRINT(to);
+
+    size_t arch[] = {2, 28, 1};
+    NN nn = nn_alloc(arch, ARRAY_LEN(arch));
+    NN g = nn_alloc(arch, ARRAY_LEN(arch));
+    nn_rand(nn, -1, 1);
+
+    float rate = 1.0f;
+    size_t max_epochs = 10 * 1000;
+    for (size_t epoch = 0; epoch < max_epochs; ++epoch) {
+        nn_backprop(nn, g, ti, to);
+        nn_learn(nn, g, rate);
+        float cost = nn_cost(nn, ti, to);
+        if (epoch % 100 == 0) {
+            printf("%zu: cost = %f\n", epoch, nn_cost(nn, ti, to));
+        }
     }
-
-    mat_save(out, t);
-    printf("Generated %s from %s\n", out_file_path, img_file_path);
 
     return 0;
 }

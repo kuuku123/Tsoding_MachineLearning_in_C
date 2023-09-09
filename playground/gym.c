@@ -190,7 +190,7 @@ int main(int argc, char** argv)
 
     NN nn = nn_alloc(arch.items, arch.count);
     NN g = nn_alloc(arch.items, arch.count);
-    nn_rand(nn, 0, 1);
+    nn_rand(nn, -1, 1);
     NN_PRINT(nn);
 
     float rate = 1.0;
