@@ -193,7 +193,7 @@ int main(int argc, char** argv)
     nn_rand(nn, 0, 1);
     NN_PRINT(nn);
 
-    float rate = 0.5;
+    float rate = 1.0;
 
     InitWindow(IMG_WIDTH, IMG_HEIGHT, "gym");
     SetTargetFPS(60);
@@ -201,10 +201,11 @@ int main(int argc, char** argv)
     Cost_Plot plot = {0};
 
     size_t epoch = 0;
-    size_t max_epoch = 5000;
+    size_t max_epoch = 10000;
+    size_t epochs_per_frame = 10;
     float cost_value = 0;
     while (!WindowShouldClose()) {
-        if (epoch < max_epoch) {
+        for (size_t i = 0; i < epochs_per_frame && epoch < max_epoch; ++i) {
             nn_backprop(nn, g, ti, to);
             nn_learn(nn, g, rate);
             epoch += 1;

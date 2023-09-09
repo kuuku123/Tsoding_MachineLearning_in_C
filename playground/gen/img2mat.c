@@ -4,6 +4,9 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
+#define NN_IMPLEMENTATION
+#include "nn.h"
+
 
 char *args_shift(int* argc, char*** argv) 
 {
@@ -38,6 +41,31 @@ int main(int argc, char **argv)
     }
 
     printf("%s size %dx%d %d bits\n", img_file_path, img_width, img_height, img_comp*8);
+
+    Mat t = mat_alloc(img_width * img_height, 3); // column is 3 becuase we have x coordinate,y coordinate,b brightness
+
+    for (int y = 0 ; y < img_height; ++y) {
+        for (int x = 0;  x < img_width; ++x) {
+            size_t i = y * img_width + x;
+            float nx = (float) x/(img_width - 1);
+            float ny = (float) y/(img_height - 1);
+            float nb = img_pixels[i] / 255.f;
+            MAT_AT(t, i, 0) = nx;
+            MAT_AT(t, i ,1) = ny;
+            MAT_AT(t, i, 2) = nb;
+        }
+    }
+    MAT_PRINT(t);
+
+    const char *out_file_path = "img.mat";
+    FILE *out = fopen(out_file_path, "wb");
+    if (out == NULL) {
+        fprintf(stderr, "ERROR: could not open file %s\n", out_file_path);
+        return 1;
+    }
+
+    mat_save(out, t);
+    printf("Generated %s from %s\n", out_file_path, img_file_path);
 
     return 0;
 }
