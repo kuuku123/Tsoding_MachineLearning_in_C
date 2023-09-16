@@ -167,7 +167,7 @@ int main(int argc, char **argv)
     // MAT_PRINT(ti);
     // MAT_PRINT(to);
 
-    size_t arch[] = {2, 28, 1};
+    size_t arch[] = {2, 7, 4, 1};
     NN nn = nn_alloc(arch, ARRAY_LEN(arch));
     NN g = nn_alloc(arch, ARRAY_LEN(arch));
     nn_rand(nn, -1, 1);
@@ -182,11 +182,11 @@ int main(int argc, char **argv)
     Cost_Plot plot = {0};
 
     size_t epoch = 0;
-    size_t max_epoch = 10000;
-    size_t epochs_per_frame = 10;
+    size_t max_epoch = 10 * 10000;
+    size_t epochs_per_frame = 120;
     float rate = 1.0f;
     float cost_value = 0;
-    bool paused = true;
+    bool paused = false;
     while (!WindowShouldClose()) {
         if (IsKeyPressed(KEY_SPACE)) {
             paused = !paused;
@@ -197,7 +197,7 @@ int main(int argc, char **argv)
             plot.count = 0;
         }
 
-        for (size_t i = 0; i < epochs_per_frame && epoch < max_epoch; ++i) {
+        for (size_t i = 0; i < epochs_per_frame && !paused  && epoch < max_epoch; ++i) {
             nn_backprop(nn, g, ti, to);
             nn_learn(nn, g, rate);
             epoch += 1;
@@ -240,15 +240,16 @@ int main(int argc, char **argv)
         EndDrawing();
     }
 
-    for (size_t epoch = 0; epoch < max_epoch; ++epoch) {
-        nn_backprop(nn, g, ti, to);
-        nn_learn(nn, g, rate);
-        float cost = nn_cost(nn, ti, to);
-        if (epoch % 100 == 0) {
-            printf("%zu: cost = %f\n", epoch, nn_cost(nn, ti, to));
-        }
-    }
+    // for (size_t epoch = 0; epoch < max_epoch; ++epoch) {
+    //     nn_backprop(nn, g, ti, to);
+    //     nn_learn(nn, g, rate);
+    //     float cost = nn_cost(nn, ti, to);
+    //     if (epoch % 100 == 0) {
+    //         printf("%zu: cost = %f\n", epoch, nn_cost(nn, ti, to));
+    //     }
+    // }
 
+    // print origin
     for (size_t y = 0; y < (size_t)img_height; ++y) {
         for (size_t x = 0; x < (size_t)img_width; ++x) {
             uint8_t pixel = img_pixels[y * img_width + x];
@@ -261,6 +262,8 @@ int main(int argc, char **argv)
         }
         printf("\n");
     }
+
+    // print trained 
     for (size_t y = 0; y < (size_t)img_height; ++y) {
         for (size_t x = 0; x < (size_t)img_width; ++x) {
             MAT_AT(NN_INPUT(nn), 0, 0) = (float) x / (img_width -1);
@@ -276,6 +279,31 @@ int main(int argc, char **argv)
         }
         printf("\n");
     }
+
+    size_t out_width = 512;
+    size_t out_height= 512;
+    uint8_t *out_pixels = malloc(sizeof(*out_pixels) * out_width * out_height);
+    assert(out_pixels != NULL);
+
+    for (size_t y = 0; y < (size_t)out_height; ++y) {
+        for (size_t x = 0; x < (size_t)out_width; ++x) {
+            MAT_AT(NN_INPUT(nn), 0, 0) = (float) x / (out_width -1);
+            MAT_AT(NN_INPUT(nn), 0, 1) = (float) y / (out_height -1);
+            nn_forward(nn);
+            uint8_t pixel = MAT_AT(NN_OUTPUT(nn), 0, 0) * 255.f;
+            out_pixels[y * out_width + x]  = pixel;
+        }
+    }
+
+    const char *out_file_path = "upscaled.png";
+
+    if (!stbi_write_png(out_file_path, out_width, out_height, 1, out_pixels, out_width * sizeof(*out_pixels))) {
+        fprintf(stderr, "ERROR: could not save image %s\n", out_file_path);
+        return 1;
+    }
+
+    printf("Generated %s from %s\n", out_file_path, img_file_path);
+
     return 0;
 }
 
