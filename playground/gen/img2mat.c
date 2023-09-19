@@ -214,7 +214,7 @@ int main(int argc, char **argv)
             int cw = GetRenderWidth();
             int ch = GetRenderHeight();
 
-            rw = cw/2;
+            rw = cw/3;
             rh = ch*2/3;
             rx = 0;
             ry = ch/2 - rh/2;
@@ -224,10 +224,8 @@ int main(int argc, char **argv)
             DrawLineEx((Vector2) {0, ceil}, (Vector2){rw ,ceil}, rh*0.007,GREEN);
             DrawLineEx((Vector2) {0, floor}, (Vector2){rw ,floor}, rh*0.007,GREEN);
 
-            rw = cw/2;
-            rh = ch*2/3;
-            rx = cw - rw;
-            ry = ch/2 - rh/2;
+            rx += rw;
+
             nn_render_raylib(nn, rx, ry, rw, rh);
             char buffer[256];
             snprintf(buffer,sizeof(buffer),"Epoch: %zu/%zu Rate: %f", epoch, max_epoch, rate);
