@@ -181,6 +181,9 @@ int main(int argc, char **argv)
 
     Cost_Plot plot = {0};
 
+    Image preview_image = GenImageColor(img_width, img_height, BLACK);
+    Texture2D preview_texture = LoadTextureFromImage(preview_image);
+
     size_t epoch = 0;
     size_t max_epoch = 10 * 10000;
     size_t epochs_per_frame = 120;
@@ -224,9 +227,25 @@ int main(int argc, char **argv)
             DrawLineEx((Vector2) {0, ceil}, (Vector2){rw ,ceil}, rh*0.007,GREEN);
             DrawLineEx((Vector2) {0, floor}, (Vector2){rw ,floor}, rh*0.007,GREEN);
 
-            rx += rw;
+            rx += rw; // update x coordinate so we can render stuff accordingly
 
             nn_render_raylib(nn, rx, ry, rw, rh);
+
+            rx += rw;
+
+            for (size_t y = 0; y < (size_t)img_height; ++y) {
+                for (size_t x = 0; x < (size_t)img_width; ++x) {
+                    MAT_AT(NN_INPUT(nn), 0, 0) = (float) x / (img_width -1);
+                    MAT_AT(NN_INPUT(nn), 0, 1) = (float) y / (img_height -1);
+                    nn_forward(nn);
+                    uint8_t pixel = MAT_AT(NN_OUTPUT(nn), 0, 0) * 255.f;
+                    ImageDrawPixel(&preview_image, x, y, CLITERAL(Color) { pixel, pixel, pixel, 255});
+                }
+            }
+
+            UpdateTexture(preview_texture, preview_image.data);
+            DrawTextureEx(preview_texture, CLITERAL(Vector2) { rx, ry }, 0 , 15 , WHITE);
+
             char buffer[256];
             snprintf(buffer,sizeof(buffer),"Epoch: %zu/%zu Rate: %f", epoch, max_epoch, rate);
             DrawText(buffer, 0, 0, ch * 0.04, WHITE);
