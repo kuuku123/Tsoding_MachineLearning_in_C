@@ -232,6 +232,8 @@ int main(int argc, char **argv)
             nn_render_raylib(nn, rx, ry, rw, rh);
 
             rx += rw;
+            
+            float scale = 15;
 
             for (size_t y = 0; y < (size_t)img_height; ++y) {
                 for (size_t x = 0; x < (size_t)img_width; ++x) {
@@ -244,7 +246,7 @@ int main(int argc, char **argv)
             }
 
             UpdateTexture(preview_texture, preview_image.data);
-            DrawTextureEx(preview_texture, CLITERAL(Vector2) { rx, ry }, 0 , 15 , WHITE);
+            DrawTextureEx(preview_texture, CLITERAL(Vector2) { rx, ry }, 0 , scale, WHITE);
 
             char buffer[256];
             snprintf(buffer,sizeof(buffer),"Epoch: %zu/%zu Rate: %f", epoch, max_epoch, rate);
