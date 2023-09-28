@@ -184,6 +184,15 @@ int main(int argc, char **argv)
     Image preview_image = GenImageColor(img_width, img_height, BLACK);
     Texture2D preview_texture = LoadTextureFromImage(preview_image);
 
+    Image original_image = GenImageColor(img_width, img_height, BLACK);
+    for (size_t y = 0; y < (size_t) img_height; ++y) {
+        for (size_t x = 0; x < (size_t) img_width; ++x) {
+            uint8_t pixel = img_pixels[y * img_width + x];
+            ImageDrawPixel(&original_image , x, y, CLITERAL(Color){ pixel, pixel, pixel, 255});
+        }
+    }
+    Texture2D original_texture = LoadTextureFromImage(original_image);
+
     size_t epoch = 0;
     size_t max_epoch = 10 * 10000;
     size_t epochs_per_frame = 120;
@@ -233,7 +242,7 @@ int main(int argc, char **argv)
 
             rx += rw;
             
-            float scale = 15;
+            float scale = 12;
 
             for (size_t y = 0; y < (size_t)img_height; ++y) {
                 for (size_t x = 0; x < (size_t)img_width; ++x) {
@@ -247,6 +256,7 @@ int main(int argc, char **argv)
 
             UpdateTexture(preview_texture, preview_image.data);
             DrawTextureEx(preview_texture, CLITERAL(Vector2) { rx, ry }, 0 , scale, WHITE);
+            DrawTextureEx(original_texture, CLITERAL(Vector2) { rx, ry + img_height * scale }, 0 , scale, WHITE);
 
             char buffer[256];
             snprintf(buffer,sizeof(buffer),"Epoch: %zu/%zu Rate: %f", epoch, max_epoch, rate);
