@@ -152,24 +152,22 @@ int main(int argc, char **argv)
 
     mat_shuffle_rows(t);
 
-    Mat ti = {
-        .rows = t.rows,
-        .cols = 2,
-        .stride = t.stride,
-        .es = &MAT_AT(t, 0, 0),
-    };
+    // Mat ti = {
+    //     .rows = t.rows,
+    //     .cols = 2,
+    //     .stride = t.stride,
+    //     .es = &MAT_AT(t, 0, 0),
+    // };
 
-    Mat to = {
-        .rows = t.rows,
-        .cols = 1,
-        .stride = t.stride,
-        .es = &MAT_AT(t, 0, ti.cols),
-    };
+    // Mat to = {
+    //     .rows = t.rows,
+    //     .cols = 1,
+    //     .stride = t.stride,
+    //     .es = &MAT_AT(t, 0, ti.cols),
+    // };
 
-    // MAT_PRINT(ti);
-    // MAT_PRINT(to);
 
-    size_t arch[] = {2, 7, 4, 1};
+    size_t arch[] = {2, 7, 7, 1};
     NN nn = nn_alloc(arch, ARRAY_LEN(arch));
     NN g = nn_alloc(arch, ARRAY_LEN(arch));
     nn_rand(nn, -1, 1);
@@ -197,12 +195,15 @@ int main(int argc, char **argv)
 
     size_t epoch = 0;
     size_t max_epoch = 10 * 10000;
-    size_t epochs_per_frame = 120;
-    size_t batch_size = 50;
+    size_t batches_per_frame = 200;
+    size_t batch_size = 28;
     size_t batch_count = (t.rows + batch_size - 1) / batch_size;
-    float rate = 1.0f;
-    float cost_value = 0;
+    size_t batch_begin = 0;
+    float average_cost = 0.f;
+    float cost_value = 0.f;
+    float rate = 0.5f;
     bool paused = false;
+
     while (!WindowShouldClose()) {
         if (IsKeyPressed(KEY_SPACE)) {
             paused = !paused;
@@ -213,13 +214,38 @@ int main(int argc, char **argv)
             plot.count = 0;
         }
 
-        for (size_t i = 0; i < epochs_per_frame && !paused  && epoch < max_epoch; ++i) {
-            
-            nn_backprop(nn, g, ti, to);
+        for (size_t i = 0; i < batches_per_frame && !paused  && epoch < max_epoch; ++i) {
+            size_t size = batch_size;
+            if (batch_begin + batch_size >= t.rows) {
+                size = t.rows - batch_begin;
+            }
+
+            Mat batch_ti = {
+                .rows = batch_size,
+                .cols = 2,
+                .stride = t.stride,
+                .es = &MAT_AT(t, batch_begin, 0),
+            };
+
+            Mat batch_to = {
+                .rows = batch_size,
+                .cols = 1,
+                .stride = t.stride,
+                .es = &MAT_AT(t, batch_begin, batch_ti.cols),
+            };
+
+            nn_backprop(nn, g, batch_ti, batch_to);
             nn_learn(nn, g, rate);
-            epoch += 1;
-            cost_value = nn_cost(nn, ti, to);
-            da_append(&plot, cost_value);
+            average_cost += nn_cost(nn, batch_ti, batch_to);
+            batch_begin += batch_size;
+
+            if (batch_begin >= t.rows) {
+                epoch += 1;
+                da_append(&plot, average_cost / batch_count);
+                cost_value = average_cost;
+                average_cost = 0.0f;
+                batch_begin = 0;
+            }
         }
 
         BeginDrawing();
