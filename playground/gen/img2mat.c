@@ -150,6 +150,8 @@ int main(int argc, char **argv)
         }
     }
 
+    mat_shuffle_rows(t);
+
     Mat ti = {
         .rows = t.rows,
         .cols = 2,
@@ -196,6 +198,8 @@ int main(int argc, char **argv)
     size_t epoch = 0;
     size_t max_epoch = 10 * 10000;
     size_t epochs_per_frame = 120;
+    size_t batch_size = 50;
+    size_t batch_count = (t.rows + batch_size - 1) / batch_size;
     float rate = 1.0f;
     float cost_value = 0;
     bool paused = false;
@@ -210,6 +214,7 @@ int main(int argc, char **argv)
         }
 
         for (size_t i = 0; i < epochs_per_frame && !paused  && epoch < max_epoch; ++i) {
+            
             nn_backprop(nn, g, ti, to);
             nn_learn(nn, g, rate);
             epoch += 1;
