@@ -111,65 +111,80 @@ void plot_cost(Cost_Plot plot, int rx, int ry, int rw, int rh)
     }
 }
 
+
+size_t arch[] = {3, 10, 10, 4, 1};
+
 int main(int argc, char **argv)
 {
     const char *program = args_shift(&argc, &argv);
 
     if (argc <= 0) {
         fprintf(stderr, "Usage: %s <input.png>\n", program);
-        fprintf(stderr, "ERROR: no input file is provided\n");
+        fprintf(stderr, "ERROR: no img1 file is provided\n");
         return 1;
     }
 
-    const char *img_file_path = args_shift(&argc, &argv);
+    const char *img1_file_path = args_shift(&argc, &argv);
 
-    int img_width, img_height, img_comp; // img_comp = amount of bytes per pixel
-    uint8_t *img_pixels = (uint8_t *)stbi_load(img_file_path, &img_width, &img_height, &img_comp, 0);
-    if (img_pixels == NULL) {
-        fprintf(stderr, "ERROR: could not read image %s\n", img_file_path);
+    int img1_width, img1_height, img1_comp; // img1_comp = amount of bytes per pixel
+    uint8_t *img1_pixels = (uint8_t *)stbi_load(img1_file_path, &img1_width, &img1_height, &img1_comp, 0);
+    if (img1_pixels == NULL) {
+        fprintf(stderr, "ERROR: could not read image %s\n", img1_file_path);
         return 1;
     }
-    if (img_comp != 1) {
-        fprintf(stderr, "ERROR: %s is %d bits image. Only 8 bit grayscale are supproted\n", img_file_path, img_comp*8);
+    if (img1_comp != 1) {
+        fprintf(stderr, "ERROR: %s is %d bits image. Only 8 bit grayscale are supproted\n", img1_file_path, img1_comp*8);
         return 1;
     }
 
-    printf("%s size %dx%d %d bits\n", img_file_path, img_width, img_height, img_comp*8);
+    const char *img2_file_path = args_shift(&argc, &argv);
 
-    Mat t = mat_alloc(img_width * img_height, 3); // column is 3 becuase we have x coordinate,y coordinate,b brightness
+    int img2_width, img2_height, img2_comp; // img2_comp = amount of bytes per pixel
+    uint8_t *img2_pixels = (uint8_t *)stbi_load(img2_file_path, &img2_width, &img2_height, &img2_comp, 0);
+    if (img2_pixels == NULL) {
+        fprintf(stderr, "ERROR: could not read image %s\n", img2_file_path);
+        return 1;
+    }
+    if (img2_comp != 1) {
+        fprintf(stderr, "ERROR: %s is %d bits image. Only 8 bit grayscale are supproted\n", img2_file_path, img2_comp*8);
+        return 1;
+    }
 
-    for (int y = 0 ; y < img_height; ++y) {
-        for (int x = 0;  x < img_width; ++x) {
-            size_t i = y * img_width + x;
-            float nx = (float) x/(img_width - 1);
-            float ny = (float) y/(img_height - 1);
-            float nb = img_pixels[i] / 255.f;
+
+    printf("%s size %dx%d %d bits\n", img1_file_path, img1_width, img1_height, img1_comp*8);
+    printf("%s size %dx%d %d bits\n", img2_file_path, img2_width, img2_height, img2_comp*8);
+
+    NN nn = nn_alloc(arch, ARRAY_LEN(arch));
+    NN g = nn_alloc(arch, ARRAY_LEN(arch));
+
+    Mat t = mat_alloc(img1_width * img1_height + img2_width * img2_height, NN_INPUT(nn).cols + NN_OUTPUT(nn).cols); // column is 3 + 1 becuase we have x coordinate,y coordinate, index (0 or 1),b brightness
+
+    for (int y = 0 ; y < img1_height; ++y) {
+        for (int x = 0;  x < img1_width; ++x) {
+            size_t i = y * img1_width + x;
+            float nx = (float) x/(img1_width - 1);
+            float ny = (float) y/(img1_height - 1);
+            float nb = img1_pixels[i] / 255.f;
             MAT_AT(t, i, 0) = nx;
             MAT_AT(t, i ,1) = ny;
-            MAT_AT(t, i, 2) = nb;
+            MAT_AT(t, i, 2) = 0.0f; // indicating index of image (0 or 1)
+            MAT_AT(t, i, 3) = nb;
         }
     }
 
-    mat_shuffle_rows(t);
+    for (int y = 0 ; y < img2_height; ++y) {
+        for (int x = 0;  x < img2_width; ++x) {
+            size_t i = img1_width * img1_height + y * img2_width + x; // index need to start after img1 rows
+            float nx = (float) x/(img2_width - 1);
+            float ny = (float) y/(img2_height - 1);
+            float nb = img2_pixels[y * img2_width + x] / 255.f;
+            MAT_AT(t, i, 0) = nx;
+            MAT_AT(t, i ,1) = ny;
+            MAT_AT(t, i, 2) = 1.0f; // indicating index of image (0 or 1)
+            MAT_AT(t, i, 3) = nb;
+        }
+    }
 
-    // Mat ti = {
-    //     .rows = t.rows,
-    //     .cols = 2,
-    //     .stride = t.stride,
-    //     .es = &MAT_AT(t, 0, 0),
-    // };
-
-    // Mat to = {
-    //     .rows = t.rows,
-    //     .cols = 1,
-    //     .stride = t.stride,
-    //     .es = &MAT_AT(t, 0, ti.cols),
-    // };
-
-
-    size_t arch[] = {2, 7, 7, 1};
-    NN nn = nn_alloc(arch, ARRAY_LEN(arch));
-    NN g = nn_alloc(arch, ARRAY_LEN(arch));
     nn_rand(nn, -1, 1);
 
     size_t WINDOW_FACTOR = 100;
@@ -181,17 +196,35 @@ int main(int argc, char **argv)
 
     Cost_Plot plot = {0};
 
-    Image preview_image = GenImageColor(img_width, img_height, BLACK);
-    Texture2D preview_texture = LoadTextureFromImage(preview_image);
+    size_t preview_width = 28;
+    size_t preview_height = 28;
 
-    Image original_image = GenImageColor(img_width, img_height, BLACK);
-    for (size_t y = 0; y < (size_t) img_height; ++y) {
-        for (size_t x = 0; x < (size_t) img_width; ++x) {
-            uint8_t pixel = img_pixels[y * img_width + x];
-            ImageDrawPixel(&original_image , x, y, CLITERAL(Color){ pixel, pixel, pixel, 255});
+    Image preview_image1 = GenImageColor(preview_width, preview_height, BLACK);
+    Texture2D preview_texture1 = LoadTextureFromImage(preview_image1);
+
+    Image preview_image2 = GenImageColor(preview_width, preview_height, BLACK);
+    Texture2D preview_texture2 = LoadTextureFromImage(preview_image2);
+
+    Image preview_image3 = GenImageColor(preview_width, preview_height, BLACK);
+    Texture2D preview_texture3 = LoadTextureFromImage(preview_image3);
+
+    Image original_image1 = GenImageColor(img1_width, img1_height, BLACK);
+    for (size_t y = 0; y < (size_t) img1_height; ++y) {
+        for (size_t x = 0; x < (size_t) img1_width; ++x) {
+            uint8_t pixel = img1_pixels[y * img1_width + x];
+            ImageDrawPixel(&original_image1 , x, y, CLITERAL(Color){ pixel, pixel, pixel, 255});
         }
     }
-    Texture2D original_texture = LoadTextureFromImage(original_image);
+    Texture2D original_texture1 = LoadTextureFromImage(original_image1);
+
+    Image original_image2 = GenImageColor(img2_width, img2_height, BLACK);
+    for (size_t y = 0; y < (size_t) img2_height; ++y) {
+        for (size_t x = 0; x < (size_t) img2_width; ++x) {
+            uint8_t pixel = img2_pixels[y * img2_width + x];
+            ImageDrawPixel(&original_image2 , x, y, CLITERAL(Color){ pixel, pixel, pixel, 255});
+        }
+    }
+    Texture2D original_texture2 = LoadTextureFromImage(original_image2);
 
     size_t epoch = 0;
     size_t max_epoch = 10 * 10000;
@@ -199,8 +232,7 @@ int main(int argc, char **argv)
     size_t batch_size = 28;
     size_t batch_count = (t.rows + batch_size - 1) / batch_size;
     size_t batch_begin = 0;
-    float average_cost = 0.f;
-    float cost_value = 0.f;
+    float average_cost = 0.0f;
     float rate = 0.5f;
     bool paused = false;
 
@@ -222,7 +254,7 @@ int main(int argc, char **argv)
 
             Mat batch_ti = {
                 .rows = batch_size,
-                .cols = 2,
+                .cols = 3,
                 .stride = t.stride,
                 .es = &MAT_AT(t, batch_begin, 0),
             };
@@ -242,9 +274,9 @@ int main(int argc, char **argv)
             if (batch_begin >= t.rows) {
                 epoch += 1;
                 da_append(&plot, average_cost / batch_count);
-                cost_value = average_cost;
                 average_cost = 0.0f;
                 batch_begin = 0;
+                mat_shuffle_rows(t);
             }
         }
 
@@ -273,46 +305,67 @@ int main(int argc, char **argv)
 
             rx += rw;
             
-            float scale = 12;
+            float scale = rh * 0.01;
 
-            for (size_t y = 0; y < (size_t)img_height; ++y) {
-                for (size_t x = 0; x < (size_t)img_width; ++x) {
-                    MAT_AT(NN_INPUT(nn), 0, 0) = (float) x / (img_width -1);
-                    MAT_AT(NN_INPUT(nn), 0, 1) = (float) y / (img_height -1);
+
+            for (size_t y = 0; y < (size_t)preview_height; ++y) {
+                for (size_t x = 0; x < (size_t)preview_width; ++x) {
+                    MAT_AT(NN_INPUT(nn), 0, 0) = (float) x / (preview_width - 1);
+                    MAT_AT(NN_INPUT(nn), 0, 1) = (float) y / (preview_height - 1);
+                    MAT_AT(NN_INPUT(nn), 0, 2) = 0.0f;
                     nn_forward(nn);
                     uint8_t pixel = MAT_AT(NN_OUTPUT(nn), 0, 0) * 255.f;
-                    ImageDrawPixel(&preview_image, x, y, CLITERAL(Color) { pixel, pixel, pixel, 255});
+                    ImageDrawPixel(&preview_image1, x, y, CLITERAL(Color) { pixel, pixel, pixel, 255});
                 }
             }
 
-            UpdateTexture(preview_texture, preview_image.data);
-            DrawTextureEx(preview_texture, CLITERAL(Vector2) { rx, ry }, 0 , scale, WHITE);
-            DrawTextureEx(original_texture, CLITERAL(Vector2) { rx, ry + img_height * scale }, 0 , scale, WHITE);
+            for (size_t y = 0; y < (size_t)preview_height; ++y) {
+                for (size_t x = 0; x < (size_t)preview_width; ++x) {
+                    MAT_AT(NN_INPUT(nn), 0, 0) = (float) x / (preview_width - 1);
+                    MAT_AT(NN_INPUT(nn), 0, 1) = (float) y / (preview_height - 1);
+                    MAT_AT(NN_INPUT(nn), 0, 2) = 1.0f;
+                    nn_forward(nn);
+                    uint8_t pixel = MAT_AT(NN_OUTPUT(nn), 0, 0) * 255.f;
+                    ImageDrawPixel(&preview_image2, x, y, CLITERAL(Color) { pixel, pixel, pixel, 255});
+                }
+            }
+
+            for (size_t y = 0; y < (size_t)preview_height; ++y) {
+                for (size_t x = 0; x < (size_t)preview_width; ++x) {
+                    MAT_AT(NN_INPUT(nn), 0, 0) = (float) x / (preview_width - 1);
+                    MAT_AT(NN_INPUT(nn), 0, 1) = (float) y / (preview_height - 1);
+                    MAT_AT(NN_INPUT(nn), 0, 2) = 0.5f;
+                    nn_forward(nn);
+                    uint8_t pixel = MAT_AT(NN_OUTPUT(nn), 0, 0) * 255.f;
+                    ImageDrawPixel(&preview_image3, x, y, CLITERAL(Color) { pixel, pixel, pixel, 255});
+                }
+            }
+
+            UpdateTexture(preview_texture1, preview_image1.data);
+            DrawTextureEx(preview_texture1, CLITERAL(Vector2) { rx, ry }, 0 , scale, WHITE);
+            DrawTextureEx(original_texture1, CLITERAL(Vector2) { rx, ry + img1_height * scale }, 0 , scale, WHITE);
+
+            UpdateTexture(preview_texture2, preview_image2.data);
+            DrawTextureEx(preview_texture2, CLITERAL(Vector2) { rx + img1_width * scale, ry }, 0 , scale, WHITE);
+            DrawTextureEx(original_texture2, CLITERAL(Vector2) { rx + img1_width * scale, ry + img2_height * scale }, 0 , scale, WHITE);
+            
+            UpdateTexture(preview_texture3, preview_image3.data);
+            DrawTextureEx(preview_texture3, CLITERAL(Vector2) { rx , ry + img2_height * scale * 2 }, 0 , scale, WHITE);
 
             char buffer[256];
             snprintf(buffer,sizeof(buffer),"Epoch: %zu/%zu Rate: %f", epoch, max_epoch, rate);
             DrawText(buffer, 0, 0, ch * 0.04, WHITE);
             char costBuffer[256];
-            snprintf(costBuffer,sizeof(costBuffer),"Cost: %f", cost_value);
+            snprintf(costBuffer,sizeof(costBuffer),"Cost: %f", plot.count > 0 ? plot.items[plot.count-1] : 0);
             DrawText(costBuffer, 0, 50, ch * 0.04, WHITE);
 
         }
         EndDrawing();
     }
 
-    // for (size_t epoch = 0; epoch < max_epoch; ++epoch) {
-    //     nn_backprop(nn, g, ti, to);
-    //     nn_learn(nn, g, rate);
-    //     float cost = nn_cost(nn, ti, to);
-    //     if (epoch % 100 == 0) {
-    //         printf("%zu: cost = %f\n", epoch, nn_cost(nn, ti, to));
-    //     }
-    // }
-
-    // print origin
-    for (size_t y = 0; y < (size_t)img_height; ++y) {
-        for (size_t x = 0; x < (size_t)img_width; ++x) {
-            uint8_t pixel = img_pixels[y * img_width + x];
+    for (size_t y = 0; y < (size_t)img1_height; ++y) {
+        for (size_t x = 0; x < (size_t)img1_width; ++x) {
+            uint8_t pixel = img1_pixels[y * img1_width + x];
             if (pixel) {
                 printf("%3u ", pixel);
             }
@@ -324,10 +377,11 @@ int main(int argc, char **argv)
     }
 
     // print trained 
-    for (size_t y = 0; y < (size_t)img_height; ++y) {
-        for (size_t x = 0; x < (size_t)img_width; ++x) {
-            MAT_AT(NN_INPUT(nn), 0, 0) = (float) x / (img_width -1);
-            MAT_AT(NN_INPUT(nn), 0, 1) = (float) y / (img_height -1);
+    for (size_t y = 0; y < (size_t)img1_height; ++y) {
+        for (size_t x = 0; x < (size_t)img1_width; ++x) {
+            MAT_AT(NN_INPUT(nn), 0, 0) = (float) x / (img1_width -1);
+            MAT_AT(NN_INPUT(nn), 0, 1) = (float) y / (img1_height -1);
+            MAT_AT(NN_INPUT(nn), 0, 2) = 0.5f;
             nn_forward(nn);
             uint8_t pixel = MAT_AT(NN_OUTPUT(nn), 0, 0) * 255.f;
             if (pixel) {
@@ -349,6 +403,7 @@ int main(int argc, char **argv)
         for (size_t x = 0; x < (size_t)out_width; ++x) {
             MAT_AT(NN_INPUT(nn), 0, 0) = (float) x / (out_width -1);
             MAT_AT(NN_INPUT(nn), 0, 1) = (float) y / (out_height -1);
+            MAT_AT(NN_INPUT(nn), 0, 2) = 0.5f;
             nn_forward(nn);
             uint8_t pixel = MAT_AT(NN_OUTPUT(nn), 0, 0) * 255.f;
             out_pixels[y * out_width + x]  = pixel;
@@ -362,7 +417,7 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    printf("Generated %s from %s\n", out_file_path, img_file_path);
+    printf("Generated %s from %s\n", out_file_path, img1_file_path);
 
     return 0;
 }
