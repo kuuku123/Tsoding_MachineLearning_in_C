@@ -8,26 +8,15 @@
 #include "stb_image.h"
 
 #define NN_IMPLEMENTATION
+#define NN_ENABLE_GYM
 #include "nn.h"
 
-
-typedef struct {
-    float *items;
-    size_t count;
-    size_t capacity;
-} Cost_Plot;
-
-#define DA_INIT_CAP 256
-#define da_append(da, item)                                                          \
-    do {                                                                             \
-        if ((da)->count >= (da)->capacity) {                                         \
-            (da)->capacity = (da)->capacity == 0 ? DA_INIT_CAP : (da)->capacity*2;   \
-            (da)->items = realloc((da)->items, (da)->capacity*sizeof(*(da)->items)); \
-            assert((da)->items != NULL && "Buy more RAM lol");                       \
-        }                                                                            \
-                                                                                     \
-        (da)->items[(da)->count++] = (item);                                         \
-    } while (0)
+size_t arch[] = {3, 10, 10, 4, 1};
+size_t max_epoch = 10 * 10000;
+size_t batches_per_frame = 200;
+size_t batch_size = 28;
+float rate = 1.0f;
+bool paused = true;
 
 char *args_shift(int* argc, char*** argv) 
 {
@@ -37,83 +26,6 @@ char *args_shift(int* argc, char*** argv)
     (*argv) += 1;
     return result;
 }
-
-
-void nn_render_raylib(NN nn,int rx, int ry, int rw, int rh)
-{
-    Color low_color  = {0xFF , 0x00, 0xFF, 0xFF};
-    Color high_color = {0x00 , 0xFF, 0x00, 0xFF};
-
-
-    float neuron_radius = rh*0.04;
-    int layer_border_vpad = 50;
-    int layer_border_hpad = 50;
-    int nn_width = rw - 2*layer_border_hpad;
-    int nn_height = rh - 2 * layer_border_vpad;
-    int nn_x = rx + rw/2 - nn_width/2;
-    int nn_y = ry + rh/2 - nn_height/2;
-
-    size_t arch_count = nn.count + 1;
-    int layer_hpad = nn_width / arch_count;
-    for (size_t l = 0; l < arch_count; ++l) {
-        int layer_vpad1 = nn_height / nn.as[l].cols;
-        for (size_t i = 0; i < nn.as[l].cols; ++i) {
-            int cx1 = nn_x + l * layer_hpad + layer_hpad/2;
-            int cy1 = nn_y + i * layer_vpad1 + layer_vpad1/2 ;
-
-            if (l+1 < arch_count) {
-                int layer_vpad2 = nn_height / nn.as[l+1].cols;
-                for (size_t j = 0; j < nn.as[l+1].cols; ++j) {
-                    int cx2 = nn_x + (l+1) * layer_hpad + layer_hpad/2;
-                    int cy2 = nn_y + j * layer_vpad2 + layer_vpad2/2;
-                    float value = sigmoidf(MAT_AT(nn.ws[l], i, j));
-                    high_color.a = floorf(255.f * value);
-                    float thick = rh * 0.004f;
-                    Vector2 start = {cx1, cy1};
-                    Vector2 end = {cx2, cy2};
-                    DrawLineEx(start, end, thick, ColorAlphaBlend(low_color, high_color,  WHITE));
-                }
-            }
-
-            if  (l > 0) {
-                high_color.a = floorf(255.f * sigmoidf(MAT_AT(nn.bs[l-1], 0, i)));
-                DrawCircle(cx1, cy1, neuron_radius, ColorAlphaBlend(low_color, high_color, WHITE));
-            } else {
-                DrawCircle(cx1, cy1, neuron_radius, GRAY); 
-            }
-        }
-    }
-}
-
-void cost_plot_minmax(Cost_Plot plot, float *min, float *max) 
-{
-    *min = FLT_MAX;
-    *max = FLT_MIN;
-    for (size_t i = 0; i < plot.count; ++i) {
-        if (*max < plot.items[i]) *max = plot.items[i];
-        if (*min > plot.items[i]) *min = plot.items[i];
-        
-    }
-}
-
-void plot_cost(Cost_Plot plot, int rx, int ry, int rw, int rh) 
-{
-    float min, max;
-    cost_plot_minmax(plot, &min, &max);
-    if (min > 0) min = 0;
-    size_t n = plot.count;
-    if (n < 1000) n = 1000;
-    for (size_t i = 0 ; i+1 < plot.count; ++i) {
-        float x1 = rx + (float)rw / n * i;
-        float y1 = ry + (1 - (plot.items[i] - min) / (max - min)) * rh;
-        float x2 = rx + (float)rw / n * (i+1);
-        float y2 = ry + (1 - (plot.items[i+1] - min) / (max - min)) * rh;
-        DrawLineEx((Vector2) {x1, y1}, (Vector2){x2 ,y2}, rh*0.007,RED);
-    }
-}
-
-
-size_t arch[] = {3, 10, 10, 4, 1};
 
 int main(int argc, char **argv)
 {
@@ -194,8 +106,8 @@ int main(int argc, char **argv)
 
     InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "gym");
     SetTargetFPS(60);
-
-    Cost_Plot plot = {0};
+    
+    Plot plot = {0};
 
     size_t preview_width = 28;
     size_t preview_height = 28;
@@ -228,14 +140,9 @@ int main(int argc, char **argv)
     Texture2D original_texture2 = LoadTextureFromImage(original_image2);
 
     size_t epoch = 0;
-    size_t max_epoch = 10 * 10000;
-    size_t batches_per_frame = 200;
-    size_t batch_size = 28;
     size_t batch_count = (t.rows + batch_size - 1) / batch_size;
     size_t batch_begin = 0;
     float average_cost = 0.0f;
-    float rate = 1.0f;
-    bool paused = true;
 
     float scroll = 0.5f;
     bool scroll_dragging = false;
@@ -299,13 +206,13 @@ int main(int argc, char **argv)
             ry = ch/2 - rh/2;
             int ceil = ry - 10;
             int floor = ry+rh+10;
-            plot_cost(plot,rx, ry, rw, rh);
+            gym_plot(plot,rx, ry, rw, rh);
             DrawLineEx((Vector2) {0, ceil}, (Vector2){rw ,ceil}, rh*0.007,GREEN);
             DrawLineEx((Vector2) {0, floor}, (Vector2){rw ,floor}, rh*0.007,GREEN);
 
             rx += rw; // update x coordinate so we can render stuff accordingly
 
-            nn_render_raylib(nn, rx, ry, rw, rh);
+            gym_render_nn(nn, rx, ry, rw, rh);
 
             rx += rw;
             
@@ -346,20 +253,20 @@ int main(int argc, char **argv)
             }
 
             UpdateTexture(preview_texture1, preview_image1.data);
-            DrawTextureEx(preview_texture1, CLITERAL(Vector2) { rx, ry }, 0 , scale, WHITE);
-            DrawTextureEx(original_texture1, CLITERAL(Vector2) { rx, ry + img1_height * scale }, 0 , scale, WHITE);
+            DrawTextureEx(preview_texture1, CLITERAL(Vector2) { rx, ry + img1_height * scale}, 0 , scale, WHITE);
+            DrawTextureEx(original_texture1, CLITERAL(Vector2) { rx, ry  }, 0 , scale, WHITE);
 
             UpdateTexture(preview_texture2, preview_image2.data);
-            DrawTextureEx(preview_texture2, CLITERAL(Vector2) { rx + img1_width * scale, ry }, 0 , scale, WHITE);
-            DrawTextureEx(original_texture2, CLITERAL(Vector2) { rx + img1_width * scale, ry + img2_height * scale }, 0 , scale, WHITE);
+            DrawTextureEx(preview_texture2, CLITERAL(Vector2) { rx + img1_width * scale, ry + img2_height * scale }, 0 , scale, WHITE);
+            DrawTextureEx(original_texture2, CLITERAL(Vector2) { rx + img1_width * scale, ry }, 0 , scale, WHITE);
             
             UpdateTexture(preview_texture3, preview_image3.data);
-            DrawTextureEx(preview_texture3, CLITERAL(Vector2) { rx , ry + img2_height * scale * 2 }, 0 , scale, WHITE);
+            DrawTextureEx(preview_texture3, CLITERAL(Vector2) { rx , ry + img2_height * scale * 2 }, 0 , 2 * scale, WHITE);
 
             {
                 float pad = rh * 0.05;
                 Vector2 size = { img1_width * scale * 2 , rh * 0.02 };
-                Vector2 position = { rx, ry + img2_height * scale * 3  + pad };
+                Vector2 position = { rx, ry + img2_height * scale * 4  + pad };
                 DrawRectangleV(position , size, WHITE);
                 
                 float knob_radius = rh * 0.02;
