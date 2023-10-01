@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include "raylib.h"
+#include "raymath.h"
 #include <limits.h>
 #include <float.h>
 
@@ -233,8 +234,11 @@ int main(int argc, char **argv)
     size_t batch_count = (t.rows + batch_size - 1) / batch_size;
     size_t batch_begin = 0;
     float average_cost = 0.0f;
-    float rate = 0.5f;
-    bool paused = false;
+    float rate = 1.0f;
+    bool paused = true;
+
+    float scroll = 0.5f;
+    bool scroll_dragging = false;
 
     while (!WindowShouldClose()) {
         if (IsKeyPressed(KEY_SPACE)) {
@@ -334,7 +338,7 @@ int main(int argc, char **argv)
                 for (size_t x = 0; x < (size_t)preview_width; ++x) {
                     MAT_AT(NN_INPUT(nn), 0, 0) = (float) x / (preview_width - 1);
                     MAT_AT(NN_INPUT(nn), 0, 1) = (float) y / (preview_height - 1);
-                    MAT_AT(NN_INPUT(nn), 0, 2) = 0.5f;
+                    MAT_AT(NN_INPUT(nn), 0, 2) = scroll;
                     nn_forward(nn);
                     uint8_t pixel = MAT_AT(NN_OUTPUT(nn), 0, 0) * 255.f;
                     ImageDrawPixel(&preview_image3, x, y, CLITERAL(Color) { pixel, pixel, pixel, 255});
@@ -351,6 +355,35 @@ int main(int argc, char **argv)
             
             UpdateTexture(preview_texture3, preview_image3.data);
             DrawTextureEx(preview_texture3, CLITERAL(Vector2) { rx , ry + img2_height * scale * 2 }, 0 , scale, WHITE);
+
+            {
+                float pad = rh * 0.05;
+                Vector2 size = { img1_width * scale * 2 , rh * 0.02 };
+                Vector2 position = { rx, ry + img2_height * scale * 3  + pad };
+                DrawRectangleV(position , size, WHITE);
+                
+                float knob_radius = rh * 0.02;
+                Vector2 knob_position = { rx + size.x * scroll, position.y + size.y * 0.5f };
+                DrawCircleV(knob_position , knob_radius,RED );
+
+                if (scroll_dragging) {
+                    float x = GetMousePosition().x;
+                    if (x < position.x) x = position.x;
+                    if (x > position.x + size.x) x = position.x + size.x;
+                    scroll = (x - position.x) / size.x;
+                }
+
+                if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+                    Vector2 mouse_position = GetMousePosition();
+                    if (Vector2Distance(mouse_position, knob_position) <= knob_radius) {
+                        scroll_dragging = true;
+                    }
+                }
+
+                if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) {
+                    scroll_dragging = false;
+                }
+            }
 
             char buffer[256];
             snprintf(buffer,sizeof(buffer),"Epoch: %zu/%zu Rate: %f", epoch, max_epoch, rate);
