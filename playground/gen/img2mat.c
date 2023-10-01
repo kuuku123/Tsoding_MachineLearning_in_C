@@ -139,8 +139,8 @@ int main(int argc, char **argv)
     }
     Texture2D original_texture2 = LoadTextureFromImage(original_image2);
 
+    Gym_Batch gb = {0};
     size_t epoch = 0;
-    size_t batch_count = (t.rows + batch_size - 1) / batch_size;
     size_t batch_begin = 0;
     float average_cost = 0.0f;
 
@@ -158,35 +158,11 @@ int main(int argc, char **argv)
         }
 
         for (size_t i = 0; i < batches_per_frame && !paused  && epoch < max_epoch; ++i) {
-            size_t size = batch_size;
-            if (batch_begin + batch_size >= t.rows) {
-                size = t.rows - batch_begin;
-            }
-
-            Mat batch_ti = {
-                .rows = batch_size,
-                .cols = 3,
-                .stride = t.stride,
-                .es = &MAT_AT(t, batch_begin, 0),
-            };
-
-            Mat batch_to = {
-                .rows = batch_size,
-                .cols = 1,
-                .stride = t.stride,
-                .es = &MAT_AT(t, batch_begin, batch_ti.cols),
-            };
-
-            nn_backprop(nn, g, batch_ti, batch_to);
-            nn_learn(nn, g, rate);
-            average_cost += nn_cost(nn, batch_ti, batch_to);
-            batch_begin += batch_size;
-
-            if (batch_begin >= t.rows) {
+            gym_process_batch(&gb, batch_size, nn, g, t, rate);
+            printf("boolean value %d\n", gb.finished);
+            if (gb.finished) {
                 epoch += 1;
-                da_append(&plot, average_cost / batch_count);
-                average_cost = 0.0f;
-                batch_begin = 0;
+                da_append(&plot, gb.cost);
                 mat_shuffle_rows(t);
             }
         }
