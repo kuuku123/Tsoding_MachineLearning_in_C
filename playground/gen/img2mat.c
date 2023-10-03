@@ -107,7 +107,7 @@ int main(int argc, char **argv)
     InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "gym");
     SetTargetFPS(60);
     
-    Plot plot = {0};
+    Gym_Plot plot = {0};
 
     size_t preview_width = 28;
     size_t preview_height = 28;
@@ -146,6 +146,7 @@ int main(int argc, char **argv)
 
     float scroll = 0.5f;
     bool scroll_dragging = false;
+    bool rate_dragging = false;
 
     while (!WindowShouldClose()) {
         if (IsKeyPressed(KEY_SPACE)) {
@@ -241,31 +242,10 @@ int main(int argc, char **argv)
 
             {
                 float pad = rh * 0.05;
-                Vector2 size = { img1_width * scale * 2 , rh * 0.02 };
-                Vector2 position = { rx, ry + img2_height * scale * 4  + pad };
-                DrawRectangleV(position , size, WHITE);
-                
-                float knob_radius = rh * 0.02;
-                Vector2 knob_position = { rx + size.x * scroll, position.y + size.y * 0.5f };
-                DrawCircleV(knob_position , knob_radius,RED );
-
-                if (scroll_dragging) {
-                    float x = GetMousePosition().x;
-                    if (x < position.x) x = position.x;
-                    if (x > position.x + size.x) x = position.x + size.x;
-                    scroll = (x - position.x) / size.x;
-                }
-
-                if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
-                    Vector2 mouse_position = GetMousePosition();
-                    if (Vector2Distance(mouse_position, knob_position) <= knob_radius) {
-                        scroll_dragging = true;
-                    }
-                }
-
-                if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) {
-                    scroll_dragging = false;
-                }
+                ry = ry + img2_height * scale * 4 + pad;
+                rw = img1_width * scale *2;
+                rh = rh * 0.02;
+                gym_slider(&scroll, &scroll_dragging, rx ,ry, rw, rh);
             }
 
             char buffer[256];
@@ -274,6 +254,7 @@ int main(int argc, char **argv)
             char costBuffer[256];
             snprintf(costBuffer,sizeof(costBuffer),"Cost: %f", plot.count > 0 ? plot.items[plot.count-1] : 0);
             DrawText(costBuffer, 0, 50, ch * 0.04, WHITE);
+            gym_slider(&rate, &rate_dragging, 0, ch*0.08, cw, ch*0.02);
 
         }
         EndDrawing();
