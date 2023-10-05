@@ -160,7 +160,6 @@ int main(int argc, char **argv)
 
         for (size_t i = 0; i < batches_per_frame && !paused  && epoch < max_epoch; ++i) {
             gym_process_batch(&gb, batch_size, nn, g, t, rate);
-            printf("boolean value %d\n", gb.finished);
             if (gb.finished) {
                 epoch += 1;
                 da_append(&plot, gb.cost);
