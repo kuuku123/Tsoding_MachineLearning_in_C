@@ -11,6 +11,7 @@ to make use of raylib
 2. cd in to build directory and "cmake -DCMAKE_INSTALL_PREFIX=$HOME/opt/raylib/ .." to build and set installation path.
 
 3. when you run above command it will tell what is missing in log , install them.
+3.5 "sudo apt-get install libglfw3-dev" 
 
 4. "make -j3" to build with 3 threads.
 

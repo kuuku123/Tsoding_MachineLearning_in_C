@@ -3,12 +3,8 @@
 set -xe
 CFLAGS="-O3 -Wall -Wextra `pkg-config --cflags raylib`"
 LIBS="`pkg-config --libs raylib` -lm -lglfw -ldl -lpthread"
-# NN_H="-I /home/tony/workspace/ml/c/MachineLearningInC/framework/"
-# STB_IMAGE="-I /home/tony/workspace/ml/c/MachineLearningInC/software/raylib/src/external/"
-
-NN_H="-I /root/workspace/ml/Tsoding_MachineLearning_in_C/framework/"
-STB_IMAGE="-I /root/workspace/ml/Tsoding_MachineLearning_in_C/software/raylib/src/external/"
-
+NN_H="-I /home/tony/workspace/ml/c/MachineLearningInC/framework/"
+STB_IMAGE="-I /home/tony/workspace/ml/c/MachineLearningInC/software/raylib/src/external/"
 
 clang $CFLAGS $NN_H -o adder_gen adder_gen.c $LIBS
 clang $CFLAGS $NN_H -o xor_gen xor_gen.c $LIBS
