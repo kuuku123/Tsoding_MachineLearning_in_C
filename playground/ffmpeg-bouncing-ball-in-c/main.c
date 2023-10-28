@@ -3,9 +3,10 @@
 #include <assert.h>
 #include <string.h>
 #include <errno.h>
+
 #include <sys/types.h>
-#include <unistd.h>
 #include <sys/wait.h>
+#include <unistd.h>
 
 #define OLIVEC_IMPLEMENTATION
 #include "olive.c"
@@ -95,8 +96,9 @@ int main (void)
 
     close(pipefd[WRITE_END]);
 
-    wait(NULL);
 
+
+    wait(NULL);
 
     printf("Done rendering the video!");
 

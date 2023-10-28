@@ -1,5 +1,12 @@
 #include <assert.h>
 #include <stdio.h>
+#include <errno.h>
+#include <string.h>
+
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
+
 #include "raylib.h"
 #include "raymath.h"
 #include <limits.h>
@@ -17,6 +24,7 @@ size_t batches_per_frame = 200;
 size_t batch_size = 28;
 float rate = 1.0f;
 bool paused = true;
+float scroll = 0.5f;
 
 char *args_shift(int* argc, char*** argv) 
 {
@@ -25,6 +33,102 @@ char *args_shift(int* argc, char*** argv)
     (*argc) -= 1;
     (*argv) += 1;
     return result;
+}
+
+#define out_width 512
+#define out_height 512
+uint32_t out_pixels[out_width*out_height];
+#define READ_END 0
+#define WRITE_END 1
+#define FPS 30
+#define STR2(x) #x
+#define STR(x) STR2(x)
+
+void render_single_out_image(NN nn, float a)
+{
+    for (size_t y = 0; y < out_height; ++y) {
+        for (size_t x = 0; x < out_width; ++x) {
+            MAT_AT(NN_INPUT(nn), 0, 0) = (float) x / (out_width- 1);
+            MAT_AT(NN_INPUT(nn), 0, 1) = (float) y / (out_height - 1);
+            MAT_AT(NN_INPUT(nn), 0, 2) = a;
+            nn_forward(nn);
+            float activation = MAT_AT(NN_OUTPUT(nn), 0, 0); // now we are using sigmoid as activation , but it might change and 0~1 output will break
+            if (activation < 0)  activation = 0;
+            if (activation > 1) activation = 1;
+            uint32_t bright = activation * 255.f;
+            uint32_t pixel = 0xFF000000|bright|(bright<<8)|(bright<<16);
+            out_pixels[y*out_width + x] = pixel;
+        }
+    }
+}
+
+int render_upscaled_video(NN nn, float duration, const char *out_file_path)
+{
+    int pipefd[2];
+
+    if (pipe(pipefd) < 0) {
+        fprintf(stderr, "Error: could not create a pipe: %s\n", strerror(errno));
+        return 1;
+    }
+
+    pid_t child = fork();
+    if (child < 0) {
+        fprintf(stderr, "Error: could not fork a child: %s\n", strerror(errno));
+        return 1;
+    }
+    if (child == 0) {
+        if (dup2(pipefd[READ_END], STDIN_FILENO) < 0) {
+            fprintf(stderr, "Error: could not reopen read end of pipe as stdin: %s\n", strerror(errno));
+            return 1;
+        }
+        close(pipefd[WRITE_END]);
+
+        int ret = execlp("ffmpeg", "ffmpeg", 
+        "-y",
+        "-f", "rawvideo",
+        "-pix_fmt", "rgba",
+        "-s:v", STR(out_width) "x" STR(out_height),
+        "-r", STR(FPS),
+        "-an",
+        "-i", "-",
+        "-c:v", "libx264",
+        out_file_path,
+        NULL);
+        if (ret < 0) {
+            fprintf(stderr, "ERROR: could not run ffpmpeg as a child process: %s\n", strerror(errno));
+            return 1;
+        }
+        assert(0 && "unreachable");
+    }
+
+    close(pipefd[READ_END]);
+
+    size_t frame_count = FPS * duration;
+    for (size_t i = 0; i < frame_count; ++i) {
+        render_single_out_image(nn, (float)i / frame_count);
+        write(pipefd[WRITE_END], out_pixels, sizeof(*out_pixels)*out_width*out_height);
+    }
+
+    close(pipefd[WRITE_END]);
+    wait(NULL);
+    printf("Generateds %s!\n",out_file_path);
+
+    return 0;
+}
+
+
+int render_upscaled_screentshot(NN nn, const char *out_file_path)
+{
+
+    render_single_out_image(nn, scroll);
+
+    if (!stbi_write_png(out_file_path, out_width, out_height, 4, out_pixels, out_width * sizeof(*out_pixels))) {
+        fprintf(stderr, "ERROR: could not save image %s\n", out_file_path);
+        return 1;
+    }
+
+    printf("Generated %s\n", out_file_path);
+    return 0;
 }
 
 int main(int argc, char **argv)
@@ -144,14 +248,9 @@ int main(int argc, char **argv)
     size_t batch_begin = 0;
     float average_cost = 0.0f;
 
-    float scroll = 0.5f;
     bool scroll_dragging = false;
     bool rate_dragging = false;
 
-    size_t out_width = 512;
-    size_t out_height= 512;
-    uint8_t *out_pixels = malloc(sizeof(*out_pixels) * out_width * out_height);
-    assert(out_pixels != NULL);
 
     while (!WindowShouldClose()) {
         if (IsKeyPressed(KEY_SPACE)) {
@@ -163,25 +262,10 @@ int main(int argc, char **argv)
             plot.count = 0;
         }
         if (IsKeyPressed(KEY_S)) {
-            for (size_t y = 0; y < out_height; ++y) {
-                for (size_t x = 0; x < out_width; ++x) {
-                    MAT_AT(NN_INPUT(nn), 0, 0) = (float) x / (out_width- 1);
-                    MAT_AT(NN_INPUT(nn), 0, 1) = (float) y / (out_height - 1);
-                    MAT_AT(NN_INPUT(nn), 0, 2) = scroll;
-                    nn_forward(nn);
-                    uint8_t pixel = MAT_AT(NN_OUTPUT(nn), 0, 0) * 255.f;
-                    out_pixels[y*out_width + x] = pixel;
-                }
-            }
-
-            const char *out_file_path = "upscaled.png";
-
-            if (!stbi_write_png(out_file_path, out_width, out_height, 1, out_pixels, out_width * sizeof(*out_pixels))) {
-                fprintf(stderr, "ERROR: could not save image %s\n", out_file_path);
-                return 1;
-            }
-
-            printf("Generated %s from %s\n", out_file_path, img1_file_path);
+            render_upscaled_screentshot(nn,"upscaled.png");
+        }
+        if (IsKeyPressed(KEY_X)) {
+            render_upscaled_video(nn, 5, "upscaled.mp4");
         }
 
         for (size_t i = 0; i < batches_per_frame && !paused  && epoch < max_epoch; ++i) {
