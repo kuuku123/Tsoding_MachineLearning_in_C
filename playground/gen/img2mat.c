@@ -103,10 +103,33 @@ int render_upscaled_video(NN nn, float duration, const char *out_file_path)
 
     close(pipefd[READ_END]);
 
+    typedef struct {
+        float start;
+        float end;
+    } Segment;
+
+    Segment segments[] = {
+        {0, 0},
+        {0, 1},
+        {1, 1},
+        {1, 0},
+    };
+
+    size_t segments_count = ARRAY_LEN(segments);
+    float segment_length = 1.0f/segments_count;
+
     size_t frame_count = FPS * duration;
     for (size_t i = 0; i < frame_count; ++i) {
-        render_single_out_image(nn, (float)i / frame_count);
+        float a = (float)i / frame_count;
+        size_t segment_index = floorf(a / segment_length);
+        float segment_progress = a /segment_length - segment_index;
+        if (segment_index > segments_count) segment_index = segment_length -1;
+        Segment segment = segments[segment_index];
+        float segment_progress = fmodf(a, segment_length);
+        float b = segment.start + (segment.end - segment.start) * segment_progress;
+        render_single_out_image(nn,b);
         write(pipefd[WRITE_END], out_pixels, sizeof(*out_pixels)*out_width*out_height);
+        printf("a = %f , index = %zu , progress = %zu, b = %f\n", a,segment_index, segment_progress);
     }
 
     close(pipefd[WRITE_END]);
@@ -369,52 +392,52 @@ int main(int argc, char **argv)
         EndDrawing();
     }
 
-    for (size_t y = 0; y < (size_t)img1_height; ++y) {
-        for (size_t x = 0; x < (size_t)img1_width; ++x) {
-            uint8_t pixel = img1_pixels[y * img1_width + x];
-            if (pixel) {
-                printf("%3u ", pixel);
-            }
-            else {
-                printf("    ");
-            }
-        }
-        printf("\n");
-    }
+    // for (size_t y = 0; y < (size_t)img1_height; ++y) {
+    //     for (size_t x = 0; x < (size_t)img1_width; ++x) {
+    //         uint8_t pixel = img1_pixels[y * img1_width + x];
+    //         if (pixel) {
+    //             printf("%3u ", pixel);
+    //         }
+    //         else {
+    //             printf("    ");
+    //         }
+    //     }
+    //     printf("\n");
+    // }
 
-    // print trained 
-    for (size_t y = 0; y < (size_t)img1_height; ++y) {
-        for (size_t x = 0; x < (size_t)img1_width; ++x) {
-            MAT_AT(NN_INPUT(nn), 0, 0) = (float) x / (img1_width -1);
-            MAT_AT(NN_INPUT(nn), 0, 1) = (float) y / (img1_height -1);
-            MAT_AT(NN_INPUT(nn), 0, 2) = 0.5f;
-            nn_forward(nn);
-            uint8_t pixel = MAT_AT(NN_OUTPUT(nn), 0, 0) * 255.f;
-            if (pixel) {
-                printf("%3u ", pixel);
-            }
-            else {
-                printf("    ");
-            }
-        }
-        printf("\n");
-    }
-
-
-    for (size_t y = 0; y < (size_t)out_height; ++y) {
-        for (size_t x = 0; x < (size_t)out_width; ++x) {
-            MAT_AT(NN_INPUT(nn), 0, 0) = (float) x / (out_width -1);
-            MAT_AT(NN_INPUT(nn), 0, 1) = (float) y / (out_height -1);
-            MAT_AT(NN_INPUT(nn), 0, 2) = 0.5f;
-            nn_forward(nn);
-            uint8_t pixel = MAT_AT(NN_OUTPUT(nn), 0, 0) * 255.f;
-            out_pixels[y * out_width + x]  = pixel;
-        }
-    }
+    // // print trained 
+    // for (size_t y = 0; y < (size_t)img1_height; ++y) {
+    //     for (size_t x = 0; x < (size_t)img1_width; ++x) {
+    //         MAT_AT(NN_INPUT(nn), 0, 0) = (float) x / (img1_width -1);
+    //         MAT_AT(NN_INPUT(nn), 0, 1) = (float) y / (img1_height -1);
+    //         MAT_AT(NN_INPUT(nn), 0, 2) = 0.5f;
+    //         nn_forward(nn);
+    //         uint8_t pixel = MAT_AT(NN_OUTPUT(nn), 0, 0) * 255.f;
+    //         if (pixel) {
+    //             printf("%3u ", pixel);
+    //         }
+    //         else {
+    //             printf("    ");
+    //         }
+    //     }
+    //     printf("\n");
+    // }
 
 
-
-
+    // for (size_t y = 0; y < (size_t)out_height; ++y) {
+    //     for (size_t x = 0; x < (size_t)out_width; ++x) {
+    //         MAT_AT(NN_INPUT(nn), 0, 0) = (float) x / (out_width -1);
+    //         MAT_AT(NN_INPUT(nn), 0, 1) = (float) y / (out_height -1);
+    //         MAT_AT(NN_INPUT(nn), 0, 2) = 0.5f;
+    //         nn_forward(nn);
+    //         uint8_t pixel = MAT_AT(NN_OUTPUT(nn), 0, 0) * 255.f;
+    //         out_pixels[y * out_width + x]  = pixel;
+    //     }
+    // }
+    
     return 0;
 }
+
+
+
 
