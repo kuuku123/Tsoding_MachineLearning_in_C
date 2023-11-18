@@ -95,6 +95,8 @@ subscript i is reffering to a sample number
         &= \avgsum[i, n]2(a_i - z_i)a_i(1 - a_i)
 \end{align}
 
+\pagebreak
+
 \subsection{Two Neuron Model with 1 inputs}
 
 \def\d{2.0}
@@ -130,7 +132,10 @@ superscript i is reffering to a layer number
     \pd[{a_i\s[1]}] C\s[2]
         &= \avgsum[i, n] 2(a_i\s[2] - y_i)a_i\s[2](1 - a_i\s[2])w\s[2] \\
     e_i
-        &= a_i\s[1] - \pd[{a_i\s[1]}]C\s[2] \\
+        &= a_i\s[1] - \pd[{a_i\s[1]}]C\s[2]
+\end{align}
+
+\begin{align}
     C\s[1]
         &= \avgsum[i, n] (a_i\s[1] - e_i)^2 \\
     \pd[{w\s[1]}]C\s[1]
@@ -157,9 +162,9 @@ Let's assume that $a_i\s[0]$ is $x_i$
     a_i\s[l] &= \sigma(a_i\s[l-1]w\s[l] + b\s[l]) \\
     \pd[{w\s[l]}]a_i\s[l] &= a_i\s[l](1 - a_i\s[l])a_i\s[l-1] \\
     \pd[{b\s[l]}]a_i\s[l] &= a_i\s[l](1 - a_i\s[l]) \\
-    \pd[{a_i\s[l-1]}]a_i\s[l] &= a_i\s[l](1 - a_i\s[l])w\s[l] \\
+    \pd[{a_i\s[l-1]}]a_i\s[l] &= a_i\s[l](1 - a_i\s[l])w\s[l]
 \end{align}
-
+\pagebreak
 \subsubsection{Back-Propagation - Tsoding's apporach}
 
 Let's denote $a_i\s[m] - y_i$ as $\pd[{a_i\s[m]}]C\s[m+1]$
@@ -175,6 +180,7 @@ Let's denote $a_i\s[m] - y_i$ as $\pd[{a_i\s[m]}]C\s[m+1]$
         &= \avgsum[i, n] 2(\pd[{a_i\s[l]}]C\s[l+1])a_i\s[l](1 - a_i\s[l])w\s[l]
 \end{align}
 
+\pagebreak
 \subsubsection{Back-Propagation - Traditional apporach}
 
 above we denoted $a_i\s[m] - y_i$ as $\pd[{a_i\s[m]}]C\s[m+1]$ but here we are just going to use $a_i\s[m] - y_i$
