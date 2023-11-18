@@ -160,7 +160,7 @@ Let's assume that $a_i\s[0]$ is $x_i$
     \pd[{a_i\s[l-1]}]a_i\s[l] &= a_i\s[l](1 - a_i\s[l])w\s[l] \\
 \end{align}
 
-\subsubsection{Back-Propagation}
+\subsubsection{Back-Propagation - Tsoding's apporach}
 
 Let's denote $a_i\s[m] - y_i$ as $\pd[{a_i\s[m]}]C\s[m+1]$
 
@@ -174,5 +174,23 @@ Let's denote $a_i\s[m] - y_i$ as $\pd[{a_i\s[m]}]C\s[m+1]$
     \pd[{a_i\s[l-1]}] C\s[l]
         &= \avgsum[i, n] 2(\pd[{a_i\s[l]}]C\s[l+1])a_i\s[l](1 - a_i\s[l])w\s[l]
 \end{align}
+
+\subsubsection{Back-Propagation - Traditional apporach}
+
+above we denoted $a_i\s[m] - y_i$ as $\pd[{a_i\s[m]}]C\s[m+1]$ but here we are just going to use $a_i\s[m] - y_i$
+
+\begin{align}
+    C\s[l]
+        &= (a_i\s[m] - y)^2\\
+    \pd[{a\s[m]}]C\s[l]
+        &= 2 \cdot (a_i\s[m] - y)\\
+    \pd[{w\s[l]}]C\s[l]
+        &= \pd[{a_i\s[l]}]C\s[l+1] \cdot a_i\s[l](1 - a_i\s[l])a\s[l-1] \\
+    \pd[{b\s[l]}]C\s[l]
+        &= \pd[{a_i\s[l]}]C\s[l+1] \cdot a_i\s[l](1 - a_i\s[l]) \\
+    \pd[{a_i\s[l-1]}] C\s[l]
+        &= \pd[{a_i\s[l]}]C\s[l+1] \cdot a_i\s[l](1 - a_i\s[l-1])w\s[l] \\
+\end{align}
+
 
 \end{document}

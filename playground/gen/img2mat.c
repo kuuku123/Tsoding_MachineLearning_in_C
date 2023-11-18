@@ -123,7 +123,8 @@ int render_upscaled_video(NN nn, float duration, const char *out_file_path)
         float a = (float)i / frame_count;
         size_t segment_index = floorf(a / segment_length);
         float segment_progress = a /segment_length - segment_index;
-        if (segment_index > segments_count) segment_index = segment_length -1;
+        if (segment_index > segments_count) 
+            segment_index = segment_length -1;
         Segment segment = segments[segment_index];
         float b = segment.start + (segment.end - segment.start) * segment_progress;
         render_single_out_image(nn,b);
