@@ -26,3 +26,7 @@ export PKG_CONFIG_PATH=$HOME/opt/raylib/lib/pkgconfig/
 
 9. when building raylib stuff in playground with build.sh apply
 source ~/opt/raylib/raylib.env && ./build.sh
+
+10. inside playground/gen folder type the following in terminal to run program
+"./img2mat mnist/6.png mnist/8.png"
+different png can be applied
