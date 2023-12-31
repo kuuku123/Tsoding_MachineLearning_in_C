@@ -1,6 +1,9 @@
 #include <assert.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <raylib.h>
+#include <math.h>
+
 
 typedef struct {
     float x;
@@ -9,10 +12,19 @@ typedef struct {
     float h;
 } Layout_Rect;
 
+Layout_Rect make_layout_rect(float x, float y , float w, float h) 
+{
+    Layout_Rect r = {0};
+    r.x = x;
+    r.y = y;
+    r.w = w;
+    r.h = h;
+    return r;
+}
+
 void widget(Layout_Rect r, Color c) 
 {
-    DrawRectangle(r.x, r.y, r.w, r.h, c);
-    printf("widget(%f, %f,%f,%f)\n", r.x, r.y, r.w, r.h);
+    DrawRectangle(ceilf(r.x), ceilf(r.y), ceilf(r.w), ceilf(r.h), c);
 }
 
 typedef enum {
@@ -23,9 +35,18 @@ typedef enum {
 typedef struct {
     Layout_Orient orient;
     Layout_Rect rect;
-    size_t i;
     size_t count;
+    size_t i;
 } Layout;
+
+Layout make_layout(Layout_Orient orient, Layout_Rect rect, size_t count) 
+{
+    Layout l = {0};
+    l.orient = orient;
+    l.rect = rect;
+    l.count = count;
+    return l;
+}
 
 Layout_Rect layout_slot(Layout *l) 
 {
@@ -55,6 +76,42 @@ Layout_Rect layout_slot(Layout *l)
     return r;
 }
 
+typedef struct {
+    Layout *items;
+    size_t count;
+    size_t capacity;
+} Layout_Stack;
+
+#define DA_INIT_CAP 256
+#define da_append(da, item)                                                          \
+    do {                                                                             \
+        if ((da)->count >= (da)->capacity) {                                         \
+            (da)->capacity = (da)->capacity == 0 ? DA_INIT_CAP : (da)->capacity*2;   \
+            (da)->items = realloc((da)->items, (da)->capacity*sizeof(*(da)->items)); \
+            assert((da)->items != NULL && "Buy more RAM lol");                       \
+        }                                                                            \
+                                                                                     \
+        (da)->items[(da)->count++] = (item);                                         \
+    } while (0)
+
+void layout_stack_push(Layout_Stack *ls, Layout_Orient orient, Layout_Rect rect, size_t count)
+{
+    Layout l = make_layout(orient, rect, count);
+    da_append(ls,l);
+}
+
+Layout_Rect layout_stack_slot(Layout_Stack *ls)
+{
+    assert(ls-> count > 0);
+    return layout_slot(&ls-> items[ls-> count-1]);
+}
+
+void layout_stack_pop(Layout_Stack *ls)
+{
+    assert(ls->count > 0);
+    ls->count -= 1;
+}
+
 int main(void) 
 {
     size_t factor = 80;
@@ -65,30 +122,29 @@ int main(void)
     InitWindow(width, height, "Layout");
     SetTargetFPS(60);
 
+    Layout_Stack ls = {0};
 
     while (!WindowShouldClose()) {
-        int w = GetRenderWidth();
-        int h = GetRenderHeight();
-
-        Layout root = {
-            .orient = LO_HORZ,
-            .rect = {0, 0, w, h},
-            .count = 3,
-        };
-
+        float w = GetRenderWidth();
+        float h = GetRenderHeight();
+        float padding = h * 0.2;
         BeginDrawing();
             ClearBackground(BLACK);
-            widget(layout_slot(&root),RED);
-            widget(layout_slot(&root),BLUE);
-            Layout panel = {
-                .orient = LO_VERT,
-                .rect = layout_slot(&root),
-                .count = 3,
-            };
-            widget(layout_slot(&panel),GREEN);
-            widget(layout_slot(&panel),YELLOW);
-            widget(layout_slot(&panel),MAGENTA);
+            layout_stack_push(&ls, LO_HORZ, make_layout_rect(0, padding, w, h - 2*padding), 3);
+                widget(layout_stack_slot(&ls),RED);
+                widget(layout_stack_slot(&ls),BLUE);
+                layout_stack_push(&ls, LO_VERT, layout_stack_slot(&ls), 3);
+                    layout_stack_push(&ls, LO_HORZ, layout_stack_slot(&ls), 2);
+                        widget(layout_stack_slot(&ls),GREEN);
+                        widget(layout_stack_slot(&ls),PURPLE);
+                    layout_stack_pop(&ls);
+                    widget(layout_stack_slot(&ls),YELLOW);
+                    widget(layout_stack_slot(&ls),MAGENTA);
+                layout_stack_pop(&ls);
+            layout_stack_pop(&ls);
         EndDrawing();
+
+        assert(ls.count == 0);
     }
 
     CloseWindow();

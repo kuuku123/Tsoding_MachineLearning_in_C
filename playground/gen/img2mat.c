@@ -6,14 +6,13 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include "raylib.h" 
 
-#include "raylib.h"
 #include "raymath.h"
 #include <limits.h>
 #include <float.h>
 
 #include "stb_image.h"
-
 #define NN_IMPLEMENTATION
 #define NN_ENABLE_GYM
 #include "nn.h"
