@@ -61,22 +61,33 @@ int main(void)
     size_t width = 16 * factor;
     size_t height = 9 * factor;
 
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(width, height, "Layout");
     SetTargetFPS(60);
 
 
     while (!WindowShouldClose()) {
+        int w = GetRenderWidth();
+        int h = GetRenderHeight();
+
         Layout root = {
             .orient = LO_HORZ,
-            .rect = {0, 0, width, height},
+            .rect = {0, 0, w, h},
             .count = 3,
         };
 
         BeginDrawing();
             ClearBackground(BLACK);
-            widget(layout_slot(&root),GREEN);
-            widget(layout_slot(&root),BLUE);
             widget(layout_slot(&root),RED);
+            widget(layout_slot(&root),BLUE);
+            Layout panel = {
+                .orient = LO_VERT,
+                .rect = layout_slot(&root),
+                .count = 3,
+            };
+            widget(layout_slot(&panel),GREEN);
+            widget(layout_slot(&panel),YELLOW);
+            widget(layout_slot(&panel),MAGENTA);
         EndDrawing();
     }
 
