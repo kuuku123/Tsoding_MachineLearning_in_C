@@ -57,8 +57,12 @@ Layout make_layout(Layout_Orient orient, Layout_Rect rect, size_t count, float g
     return l;
 }
 
-Layout_Rect layout_slot(Layout *l) 
+Layout_Rect layout_slot(Layout *l, const char *file_path, int line) 
 {
+    if (l->i >= l->count) {
+        fprintf(stderr, "%s:%d: ERROR: Layout overflow\n", file_path, line);
+        exit(1);
+    }
     assert(l-> i < l-> count);
     Layout_Rect r = {0};
 
@@ -136,11 +140,12 @@ void layout_stack_push(Layout_Stack *ls, Layout_Orient orient, Layout_Rect rect,
     da_append(ls,l);
 }
 
-Layout_Rect layout_stack_slot(Layout_Stack *ls)
+Layout_Rect layout_stack_slot_loc(Layout_Stack *ls, const char *file_path, int line)
 {
-    assert(ls-> count > 0);
-    return layout_slot(&ls-> items[ls-> count-1]);
+    assert(ls->count >0);
+    return layout_slot(&ls-> items[ls-> count-1], file_path, line);
 }
+#define layout_stack_slot(ls) layout_stack_slot_loc(ls, __FILE__, __LINE__)
 
 void layout_stack_pop(Layout_Stack *ls)
 {
@@ -173,6 +178,7 @@ int main(void)
                 layout_stack_push(&ls, LO_VERT, layout_stack_slot(&ls), 3, gap);
                     layout_stack_push(&ls, LO_HORZ, layout_stack_slot(&ls), 2, gap);
                         widget(layout_stack_slot(&ls),GREEN);
+                        widget(layout_stack_slot(&ls),PURPLE);
                         widget(layout_stack_slot(&ls),PURPLE);
                     layout_stack_pop(&ls);
                     layout_stack_push(&ls, LO_HORZ, layout_stack_slot(&ls), 3, gap);
