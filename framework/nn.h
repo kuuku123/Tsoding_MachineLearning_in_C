@@ -40,6 +40,13 @@ float sigmoidf(float x);
 float reluf(float x);
 float tanhf(float x);
 
+// Dispatch to the corresponding activation function
+float actf(float x, Act act);
+
+// Derivative of the activation function based on its value
+float dactf(float y, Act act);
+
+
 typedef struct {
     size_t rows;
     size_t cols;
@@ -142,6 +149,30 @@ float tanhf(float x)
     float ex = expf(x);
     float enx = expf(-x);
     return (ex - enx)/(ex + enx);
+}
+
+float actf(float x, Act act)
+{
+    switch (act) {
+    case ACT_SIG:  return sigmoidf(x);
+    case ACT_RELU: return reluf(x);
+    case ACT_TANH: return tanhf(x);
+    case ACT_SIN:  return sinf(x);
+    }
+    NN_ASSERT(0 && "Unreachable");
+    return 0.0f;
+}
+
+float dactf(float y, Act act)
+{
+    switch (act) {
+    case ACT_SIG:  return y*(1 - y);
+    case ACT_RELU: return y >= 0 ? 1 : NN_RELU_PARAM;
+    case ACT_TANH: return 1 - y*y;
+    case ACT_SIN:  return cosf(asinf(y));
+    }
+    NN_ASSERT(0 && "Unreachable");
+    return 0.0f;
 }
 
 
@@ -253,22 +284,7 @@ void mat_act(Mat m)
 {
     for (size_t i = 0; i< m.rows; ++i) {
         for (size_t j = 0; j<m.cols; ++j) {
-            switch (NN_ACT) {
-            case ACT_SIG:
-                MAT_AT(m, i, j) = sigmoidf(MAT_AT(m, i, j));
-                break;
-            case ACT_RELU:
-                MAT_AT(m, i, j) = reluf(MAT_AT(m, i, j));
-                break;
-            case ACT_TANH:
-                MAT_AT(m, i, j) = tanhf(MAT_AT(m, i, j));
-                break;
-            case ACT_SIN:
-                MAT_AT(m, i, j) = sinf(MAT_AT(m, i, j));
-                break;
-            default:
-                NN_ASSERT(0 && "Unreachable");
-            }
+            MAT_AT(m, i, j) = actf(MAT_AT(m, i, j), NN_ACT);
         }
     }
 }
@@ -424,24 +440,9 @@ void nn_backprop(NN nn, NN g, Mat ti, Mat to)
             for (size_t j = 0; j < nn.as[l].cols ; ++j) {
                 float a = MAT_AT(nn.as[l], 0, j);
                 float da = MAT_AT(g.as[l], 0, j);
-                float q;
-                switch (NN_ACT) {
-                case ACT_SIG:
-                    q = a*(1 - a);
-                    break;
-                case ACT_RELU:
-                    q = a >= 0 ? 1 : NN_RELU_PARAM;
-                    break;
-                case ACT_TANH:
-                    q = 1 - a*a;
-                    break;
-                case ACT_SIN:
-                    NN_ASSERT(0 && "Unsupported");
-                    break;
-                default:
-                    NN_ASSERT(0 && "Unreachable");
-                }
-                MAT_AT(g.bs[l-1], 0, j) += s*da*q;
+
+                float qa = dactf(a, NN_ACT);
+                MAT_AT(g.bs[l-1], 0, j) += s*da*qa;
 
                 // The reason for running a for loop as many as the number of previous activations is 
                 // there are many weight as number of pervious activation but there is only one bias for one neuron(activation)
@@ -450,9 +451,9 @@ void nn_backprop(NN nn, NN g, Mat ti, Mat to)
                     // k = weight matrix row
                     float pa = MAT_AT(nn.as[l-1], 0, k);
                     float w = MAT_AT(nn.ws[l-1], k, j);
-                    MAT_AT(g.ws[l-1], k, j) += s*da*q*pa;
+                    MAT_AT(g.ws[l-1], k, j) += s*da*qa*pa;
                     // and g.as[l-1]'s derivative must sum up through all the current (l) derivative
-                    MAT_AT(g.as[l-1], 0, k) += s*da*q*w;
+                    MAT_AT(g.as[l-1], 0, k) += s*da*qa*w;
                 }
             }
         }
