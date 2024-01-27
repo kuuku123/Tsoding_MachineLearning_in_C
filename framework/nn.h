@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <math.h>
 #include <string.h>
 
@@ -65,14 +66,19 @@ void nn_finite_diff(NN nn, NN g, float eps , Mat ti , Mat to);
 void nn_backprop(NN nn, NN g, Mat ti, Mat to);
 void nn_learn(NN nn, NN g, float rate);
 
-#ifdef NN_ENABLE_GYM
-#include "raylib.h"
-
 typedef struct {
     size_t begin;
     float cost;
     bool finished;
-} Gym_Batch;
+} Batch;
+void batch_process(Batch *b, size_t batch_size, NN nn, NN g, Mat t, float rate);
+
+#ifdef NN_ENABLE_GYM
+#include <float.h>
+#include <raylib.h>
+#include <raymath.h>
+
+
 
 typedef struct {
     float *items;
@@ -95,7 +101,6 @@ typedef struct {
 void gym_render_nn(NN nn, float rx, float ry, float rw, float rh);
 void gym_plot(Gym_Plot plot, int rx, int ry, int rw , int rh);
 void gym_slider(float *value , bool *dragging, float rx, float ry, float rw, float rh);
-void gym_process_batch(Gym_Batch *gb, size_t batch_size, NN nn , NN g, Mat t, float rate);
 
 #endif // NN_ENABLE_GYM
 
@@ -457,6 +462,46 @@ void mat_shuffle_rows(Mat m)
     
 }
 
+void batch_process(Batch *b, size_t batch_size, NN nn, NN g, Mat t, float rate)
+{
+    if (b->finished) {
+        b-> finished = false;
+        b-> begin = 0;
+        b-> cost = 0;
+    }
+
+    size_t size = batch_size;
+    if (b-> begin + batch_size >= t.rows) {
+        size = t.rows - b-> begin;
+    }
+
+    Mat batch_ti = {
+        .rows = size,
+        .cols = NN_INPUT(nn).cols,
+        .stride = t.stride,
+        .es = &MAT_AT(t, b-> begin,0),
+    };
+
+    Mat batch_to = {
+        .rows = size,
+        .cols = NN_OUTPUT(nn).cols,
+        .stride = t.stride,
+        .es = &MAT_AT(t, b->begin, batch_ti.cols),
+    };
+
+    nn_backprop(nn, g, batch_ti, batch_to);
+    nn_learn(nn, g, rate);
+    b->cost += nn_cost(nn, batch_ti, batch_to);
+    b->begin += batch_size;
+
+    if (b->begin >= t.rows) {
+        size_t batch_count = (t.rows + batch_size - 1)/batch_size;
+        b->cost /= batch_count;
+        b->finished = true;
+    }
+
+}
+
 #endif // NN_IMPLEMENTATION
 
 #ifdef NN_ENABLE_GYM
@@ -535,44 +580,6 @@ void gym_plot(Gym_Plot plot, int rx, int ry, int rw, int rh)
     }
 }
 
-void gym_process_batch(Gym_Batch *gb, size_t batch_size, NN nn , NN g, Mat t, float rate)
-{
-    if (gb -> finished) {
-        gb->finished = false;
-        gb->begin = 0;
-        gb->cost = 0;
-    }
-
-    size_t size = batch_size;
-    if (gb->begin + batch_size >= t.rows) {
-        size = t.rows - gb->begin;
-    }
-
-    Mat batch_ti = {
-        .rows = batch_size,
-        .cols = 3,
-        .stride = t.stride,
-        .es = &MAT_AT(t, gb->begin, 0),
-    };
-
-    Mat batch_to = {
-        .rows = batch_size,
-        .cols = 1,
-        .stride = t.stride,
-        .es = &MAT_AT(t, gb->begin, batch_ti.cols),
-    };
-
-    nn_backprop(nn, g, batch_ti, batch_to);
-    nn_learn(nn, g, rate);
-    gb->cost += nn_cost(nn, batch_ti, batch_to);
-    gb->begin += batch_size;
-
-    if (gb->begin >= t.rows) {
-        size_t batch_count = (t.rows + batch_size - 1) / batch_size;
-        gb->cost /= batch_count;
-        gb->finished = true;
-    }
-}
 
 void gym_slider(float *value , bool *dragging, float rx, float ry, float rw, float rh)
 {
