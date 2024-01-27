@@ -72,7 +72,7 @@ void mat_shuffle_rows(Mat m);
 
 typedef struct
 {
-    size_t count;
+    size_t count; // the amount of ws and bs matrices
     Mat *ws;
     Mat *bs;
     Mat *as; // The amount of activations is count + 1 , because of init
@@ -148,7 +148,7 @@ void gym_layout_stack_push(Gym_Layout_Stack *ls, Gym_Layout_Orient orient, Gym_R
 
 static Gym_Layout_Stack default_gym_layout_stack = {0};
 
-#define gym_layout_begin(orient, rect, count, gap) gym_layout_stack_push(&default_gym_layout_stack, (orient), (rect), (count), (gap))
+#define gym_layout_begin(orient, rect, count, gap) gym_layout_stack_push(&default_gym_layout_stack, orient, rect, count, gap)
 #define gym_layout_end() gym_layout_stack_pop(&default_gym_layout_stack)
 #define gym_layout_slot() gym_layout_stack_slot(&default_gym_layout_stack)
 
