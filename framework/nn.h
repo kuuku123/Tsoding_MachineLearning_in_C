@@ -165,6 +165,8 @@ static Gym_Layout_Stack default_gym_layout_stack = {0};
     } while (0)
 
 void gym_render_nn(NN nn, Gym_Rect r);
+void gym_render_mat_as_cake(Mat m, Gym_Rect r);
+void gym_render_nn_as_cake(NN nn, Gym_Rect r);
 void gym_plot(Gym_Plot plot, Gym_Rect r);
 void gym_slider(float *value , bool *dragging, float rx, float ry, float rw, float rh);
 
@@ -627,23 +629,24 @@ void gym_render_nn(NN nn, Gym_Rect r)
     float nn_y = r.y + r.h/2 - nn_height/2;
 
     size_t arch_count = nn.count + 1;
-    int layer_hpad = nn_width / arch_count;
+    float layer_hpad = nn_width / arch_count;
     for (size_t l = 0; l < arch_count; ++l) {
-        int layer_vpad1 = nn_height / nn.as[l].cols;
+        float layer_vpad1 = nn_height / nn.as[l].cols;
         for (size_t i = 0; i < nn.as[l].cols; ++i) {
-            int cx1 = nn_x + l * layer_hpad + layer_hpad/2;
-            int cy1 = nn_y + i * layer_vpad1 + layer_vpad1/2 ;
+            float cx1 = nn_x + l * layer_hpad + layer_hpad/2;
+            float cy1 = nn_y + i * layer_vpad1 + layer_vpad1/2 ;
 
             if (l+1 < arch_count) {
-                int layer_vpad2 = nn_height / nn.as[l+1].cols;
+                float layer_vpad2 = nn_height / nn.as[l+1].cols;
                 for (size_t j = 0; j < nn.as[l+1].cols; ++j) {
-                    int cx2 = nn_x + (l+1) * layer_hpad + layer_hpad/2;
-                    int cy2 = nn_y + j * layer_vpad2 + layer_vpad2/2;
+                    float cx2 = nn_x + (l+1) * layer_hpad + layer_hpad/2;
+                    float cy2 = nn_y + j * layer_vpad2 + layer_vpad2/2;
                     float value = sigmoidf(MAT_AT(nn.ws[l], i, j));
                     high_color.a = floorf(255.f * value);
                     float thick = r.h * 0.004f;
                     Vector2 start = {cx1, cy1};
                     Vector2 end = {cx2, cy2};
+                    printf("i = %zu , line = %zu \n", i, j);
                     DrawLineEx(start, end, thick, ColorAlphaBlend(low_color, high_color,  WHITE));
                 }
             }
@@ -658,6 +661,38 @@ void gym_render_nn(NN nn, Gym_Rect r)
     }
 }
 
+void gym_render_mat_as_cake(Mat m, Gym_Rect r)
+{
+    Color low_color  = {0xFF , 0x00, 0xFF, 0xFF};
+    Color high_color = {0x00 , 0xFF, 0x00, 0xFF};
+
+    float cell_width = r.w/m.cols;
+    float cell_height = r.h/m.rows;
+
+    for (size_t y = 0; y < m.rows; ++y) {
+        for (size_t x = 0; x < m.cols; ++x) {
+            float alpha = sigmoidf(MAT_AT(m, y, x));
+            high_color.a = floorf(255.f * alpha);
+            Color color = ColorAlphaBlend(low_color, high_color, WHITE);
+            DrawRectangle(
+                    ceilf(r.x + x * cell_width),
+                    ceilf(r.y + y * cell_height), 
+                    ceilf(cell_width), 
+                    ceilf(cell_height), 
+                    color
+                );
+        }
+    }
+}
+
+void gym_render_nn_as_cake(NN nn, Gym_Rect r) 
+{
+    gym_layout_begin(GLO_VERT, r, nn.count, 20);
+    for (size_t i = 0; i < nn.count; ++i) {
+        gym_render_mat_as_cake(nn.ws[i], gym_layout_slot());
+    }
+    gym_layout_end();
+}
 
 void cost_plot_minmax(Gym_Plot plot, float *min, float *max) 
 {
