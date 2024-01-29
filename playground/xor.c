@@ -114,7 +114,6 @@ int main(void)
             DrawTextEx(font, buffer, CLITERAL(Vector2){}, h*0.04, 0, WHITE);
         }
         EndDrawing();
-        return 0;
     }
 
     return 0;

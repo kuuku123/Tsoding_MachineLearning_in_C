@@ -666,23 +666,21 @@ void gym_render_mat_as_cake(Mat m, Gym_Rect r)
     Color low_color  = {0xFF , 0x00, 0xFF, 0xFF};
     Color high_color = {0x00 , 0xFF, 0x00, 0xFF};
 
-    float cell_width = r.w/m.cols;
-    float cell_height = r.h/m.rows;
+    float gap = 5;
 
+    gym_layout_begin(GLO_VERT, r, m.rows, gap);
     for (size_t y = 0; y < m.rows; ++y) {
+        gym_layout_begin(GLO_HORZ, gym_layout_slot(), m.cols, gap);
         for (size_t x = 0; x < m.cols; ++x) {
             float alpha = sigmoidf(MAT_AT(m, y, x));
             high_color.a = floorf(255.f * alpha);
             Color color = ColorAlphaBlend(low_color, high_color, WHITE);
-            DrawRectangle(
-                    ceilf(r.x + x * cell_width),
-                    ceilf(r.y + y * cell_height), 
-                    ceilf(cell_width), 
-                    ceilf(cell_height), 
-                    color
-                );
+            Gym_Rect slot = gym_layout_slot();
+            DrawRectangle(slot.x, slot.y, slot.w, slot.h, color);
         }
+        gym_layout_end();
     }
+    gym_layout_end();
 }
 
 void gym_render_nn_as_cake(NN nn, Gym_Rect r) 
