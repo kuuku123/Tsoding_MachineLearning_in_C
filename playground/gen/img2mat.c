@@ -153,6 +153,65 @@ int render_upscaled_screentshot(NN nn, const char *out_file_path)
     return 0;
 }
 
+typedef enum {
+    GHA_LEFT,
+    GHA_RIGHT,
+    GHA_CENTER,
+} Gym_Horz_Align;
+
+typedef enum {
+    GVA_TOP,
+    GVA_BOTTOM,
+    GVA_CENTER,
+} Gym_Vert_Align;
+
+Vector2 render_texture_in_slot(Texture2D texture, Gym_Horz_Align ha, Gym_Vert_Align va, Gym_Rect r)
+{
+    Vector2 position = {r.x, r.y};
+    float scale = 0;
+    if (r.w > r.h) {
+        scale = r.h/texture.height;
+        switch (ha) {
+        case GHA_LEFT: break;
+        case GHA_RIGHT:
+            position.x += r.w;
+            position.x -= texture.width*scale;
+            break;
+        case GHA_CENTER:
+            position.x += r.w/2;
+            position.x -= texture.width*scale/2;
+            break;
+        }        
+        DrawTextureEx(texture, position, 0, scale, WHITE);
+    } else {
+        scale = r.w/texture.width;
+        switch (va) {
+        case GVA_TOP: break;
+        case GVA_BOTTOM:
+            position.y += r.h;
+            position.y -= texture.height*scale;
+            break;
+        case GVA_CENTER:
+            position.y += r.h/2;
+            position.y -= texture.height*scale/2;
+            break;
+        }
+        DrawTextureEx(texture, position, 0, scale, WHITE);
+    }
+
+    Vector2 mouse_position = GetMousePosition();
+    Rectangle hitbox = {
+        position.x,
+        position.y,
+        texture.width*scale,
+        texture.height*scale,
+    };
+    return CLITERAL(Vector2) {
+        (mouse_position.x - position.x)/hitbox.width,
+        (mouse_position.y - position.y)/hitbox.height
+    };
+}
+
 int main(int argc, char **argv)
 {
     const char *program = args_shift(&argc, &argv);
@@ -265,7 +324,7 @@ int main(int argc, char **argv)
     }
     Texture2D original_texture2 = LoadTextureFromImage(original_image2);
 
-    Gym_Batch gb = {0};
+    Batch batch= {0};
     size_t epoch = 0;
     size_t batch_begin = 0;
     float average_cost = 0.0f;
@@ -291,102 +350,88 @@ int main(int argc, char **argv)
         }
 
         for (size_t i = 0; i < batches_per_frame && !paused  && epoch < max_epoch; ++i) {
-            gym_process_batch(&gb, batch_size, nn, g, t, rate);
-            if (gb.finished) {
+            batch_process(&batch, batch_size, nn, g, t, rate);
+            if (batch.finished) {
                 epoch += 1;
-                da_append(&plot, gb.cost);
+                da_append(&plot, batch.cost);
                 mat_shuffle_rows(t);
             }
         }
+
+
+        for (size_t y = 0; y < (size_t)preview_height; ++y) {
+            for (size_t x = 0; x < (size_t)preview_width; ++x) {
+                MAT_AT(NN_INPUT(nn), 0, 0) = (float) x / (preview_width - 1);
+                MAT_AT(NN_INPUT(nn), 0, 1) = (float) y / (preview_height - 1);
+                MAT_AT(NN_INPUT(nn), 0, 2) = 0.0f;
+                nn_forward(nn);
+                uint8_t pixel = MAT_AT(NN_OUTPUT(nn), 0, 0) * 255.f;
+                ImageDrawPixel(&preview_image1, x, y, CLITERAL(Color) { pixel, pixel, pixel, 255});
+            }
+        }
+
+        for (size_t y = 0; y < (size_t)preview_height; ++y) {
+            for (size_t x = 0; x < (size_t)preview_width; ++x) {
+                MAT_AT(NN_INPUT(nn), 0, 0) = (float) x / (preview_width - 1);
+                MAT_AT(NN_INPUT(nn), 0, 1) = (float) y / (preview_height - 1);
+                MAT_AT(NN_INPUT(nn), 0, 2) = 1.0f;
+                nn_forward(nn);
+                uint8_t pixel = MAT_AT(NN_OUTPUT(nn), 0, 0) * 255.f;
+                ImageDrawPixel(&preview_image2, x, y, CLITERAL(Color) { pixel, pixel, pixel, 255});
+            }
+        }
+
+        for (size_t y = 0; y < (size_t)preview_height; ++y) {
+            for (size_t x = 0; x < (size_t)preview_width; ++x) {
+                MAT_AT(NN_INPUT(nn), 0, 0) = (float) x / (preview_width - 1);
+                MAT_AT(NN_INPUT(nn), 0, 1) = (float) y / (preview_height - 1);
+                MAT_AT(NN_INPUT(nn), 0, 2) = scroll;
+                nn_forward(nn);
+                uint8_t pixel = MAT_AT(NN_OUTPUT(nn), 0, 0) * 255.f;
+                ImageDrawPixel(&preview_image3, x, y, CLITERAL(Color) { pixel, pixel, pixel, 255});
+            }
+        }
+
+        UpdateTexture(preview_texture1, preview_image1.data);
+        UpdateTexture(preview_texture2, preview_image2.data);
+        UpdateTexture(preview_texture3, preview_image3.data);
 
         BeginDrawing();
         Color background_color = { 0x18, 0x18, 0x18, 0xFF};
         ClearBackground(background_color);
         {
-            int rw, rh, rx, ry;
+            int w = GetRenderWidth();
+            int h = GetRenderHeight();
 
-            int cw = GetRenderWidth();
-            int ch = GetRenderHeight();
+            Gym_Rect r;
+            r.w = w;
+            r.h = h*2/3;
+            r.x = 0;
+            r.y = h/2 - r.h/2;
 
-            rw = cw/3;
-            rh = ch*2/3;
-            rx = 0;
-            ry = ch/2 - rh/2;
-            int ceil = ry - 10;
-            int floor = ry+rh+10;
-            gym_plot(plot,rx, ry, rw, rh);
-            DrawLineEx((Vector2) {0, ceil}, (Vector2){rw ,ceil}, rh*0.007,GREEN);
-            DrawLineEx((Vector2) {0, floor}, (Vector2){rw ,floor}, rh*0.007,GREEN);
-
-            rx += rw; // update x coordinate so we can render stuff accordingly
-
-            gym_render_nn(nn, rx, ry, rw, rh);
-
-            rx += rw;
-            
-            float scale = rh * 0.01;
-
-
-            for (size_t y = 0; y < (size_t)preview_height; ++y) {
-                for (size_t x = 0; x < (size_t)preview_width; ++x) {
-                    MAT_AT(NN_INPUT(nn), 0, 0) = (float) x / (preview_width - 1);
-                    MAT_AT(NN_INPUT(nn), 0, 1) = (float) y / (preview_height - 1);
-                    MAT_AT(NN_INPUT(nn), 0, 2) = 0.0f;
-                    nn_forward(nn);
-                    uint8_t pixel = MAT_AT(NN_OUTPUT(nn), 0, 0) * 255.f;
-                    ImageDrawPixel(&preview_image1, x, y, CLITERAL(Color) { pixel, pixel, pixel, 255});
-                }
-            }
-
-            for (size_t y = 0; y < (size_t)preview_height; ++y) {
-                for (size_t x = 0; x < (size_t)preview_width; ++x) {
-                    MAT_AT(NN_INPUT(nn), 0, 0) = (float) x / (preview_width - 1);
-                    MAT_AT(NN_INPUT(nn), 0, 1) = (float) y / (preview_height - 1);
-                    MAT_AT(NN_INPUT(nn), 0, 2) = 1.0f;
-                    nn_forward(nn);
-                    uint8_t pixel = MAT_AT(NN_OUTPUT(nn), 0, 0) * 255.f;
-                    ImageDrawPixel(&preview_image2, x, y, CLITERAL(Color) { pixel, pixel, pixel, 255});
-                }
-            }
-
-            for (size_t y = 0; y < (size_t)preview_height; ++y) {
-                for (size_t x = 0; x < (size_t)preview_width; ++x) {
-                    MAT_AT(NN_INPUT(nn), 0, 0) = (float) x / (preview_width - 1);
-                    MAT_AT(NN_INPUT(nn), 0, 1) = (float) y / (preview_height - 1);
-                    MAT_AT(NN_INPUT(nn), 0, 2) = scroll;
-                    nn_forward(nn);
-                    uint8_t pixel = MAT_AT(NN_OUTPUT(nn), 0, 0) * 255.f;
-                    ImageDrawPixel(&preview_image3, x, y, CLITERAL(Color) { pixel, pixel, pixel, 255});
-                }
-            }
-
-            UpdateTexture(preview_texture1, preview_image1.data);
-            DrawTextureEx(preview_texture1, CLITERAL(Vector2) { rx, ry + img1_height * scale}, 0 , scale, WHITE);
-            DrawTextureEx(original_texture1, CLITERAL(Vector2) { rx, ry  }, 0 , scale, WHITE);
-
-            UpdateTexture(preview_texture2, preview_image2.data);
-            DrawTextureEx(preview_texture2, CLITERAL(Vector2) { rx + img1_width * scale, ry + img2_height * scale }, 0 , scale, WHITE);
-            DrawTextureEx(original_texture2, CLITERAL(Vector2) { rx + img1_width * scale, ry }, 0 , scale, WHITE);
-            
-            UpdateTexture(preview_texture3, preview_image3.data);
-            DrawTextureEx(preview_texture3, CLITERAL(Vector2) { rx , ry + img2_height * scale * 2 }, 0 , 2 * scale, WHITE);
+            gym_layout_begin(GLO_HORZ, r, 3, 10);
+                gym_plot(plot, gym_layout_slot());
+                gym_render_nn_weights_heatmap(nn, gym_layout_slot());
+                Gym_Rect preview_slot = gym_layout_slot();
+                gym_layout_begin(GLO_VERT, preview_slot, 3, 0);
+                    gym_layout_begin(GLO_HORZ, gym_layout_slot(), 2, 0);
+                        render_texture_in_slot(original_texture1, GHA_RIGHT, GVA_BOTTOM, gym_layout_slot());
+                        render_texture_in_slot(original_texture2, GHA_LEFT, GVA_BOTTOM, gym_layout_slot());
+                    gym_layout_end();
+                    gym_layout_begin(GLO_HORZ, gym_layout_slot(), 2, 0);
+                        render_texture_in_slot(preview_texture1, GHA_RIGHT, GVA_TOP, gym_layout_slot());
+                        render_texture_in_slot(preview_texture2, GHA_LEFT, GVA_TOP, gym_layout_slot());
+                    gym_layout_end();
+                    render_texture_in_slot(preview_texture3, GHA_CENTER, GVA_CENTER, gym_layout_slot());
+            gym_layout_end();
 
             {
-                float pad = rh * 0.05;
-                ry = ry + img2_height * scale * 4 + pad;
-                rw = img1_width * scale *2;
-                rh = rh * 0.02;
-                gym_slider(&scroll, &scroll_dragging, rx ,ry, rw, rh);
+                float rw = preview_slot.w;
+                float rh = preview_slot.h*0.03;
+                float rx = preview_slot.x;
+                float ry = rh + preview_slot.y + preview_slot.h;
+                gym_slider(&scroll, &scroll_dragging, rx, ry, rw, rh);
             }
-
-            char buffer[256];
-            snprintf(buffer,sizeof(buffer),"Epoch: %zu/%zu Rate: %f", epoch, max_epoch, rate);
-            DrawText(buffer, 0, 0, ch * 0.04, WHITE);
-            char costBuffer[256];
-            snprintf(costBuffer,sizeof(costBuffer),"Cost: %f", plot.count > 0 ? plot.items[plot.count-1] : 0);
-            DrawText(costBuffer, 0, 50, ch * 0.04, WHITE);
-            gym_slider(&rate, &rate_dragging, 0, ch*0.08, cw, ch*0.02);
-
         }
         EndDrawing();
     }
